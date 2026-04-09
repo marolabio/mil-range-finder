@@ -102,6 +102,14 @@ export function GuidePage() {
           </div>
         </Card>
 
+        <Card title="Field Note">
+          <div className="space-y-2 text-sm leading-6 text-white/76">
+            <p className="font-medium text-accent">Standard MIL</p>
+            <p className="mono">1 major line = 1 mil</p>
+            <p>Do not assume 5 mil per line unless your binocular specifically says so.</p>
+          </div>
+        </Card>
+
         <Card title="Quick Reference" subtitle="Compact cheat sheet for common sizes">
           <div className="space-y-2">
             {quickReferenceRows.map((row) => (

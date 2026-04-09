@@ -26,6 +26,28 @@ const presetByLabel = new Map(
   ),
 );
 
+function getInitialInputs() {
+  const defaultPresetLabel = "20 cm target";
+
+  if (typeof window === "undefined") {
+    return {
+      milInput: "",
+      selectedPreset: defaultPresetLabel,
+      sizeInput: presetByLabel.get(defaultPresetLabel)?.toString() ?? "20",
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const selectedPreset = params.get("label") ?? defaultPresetLabel;
+  const presetSize = presetByLabel.get(selectedPreset);
+
+  return {
+    milInput: params.get("mil") ?? "",
+    selectedPreset,
+    sizeInput: params.get("size") ?? presetSize?.toString() ?? "20",
+  };
+}
+
 function createErrors(milValue: string, sizeValue: string): FieldErrors {
   const milNumber = Number(milValue);
   const sizeNumber = Number(sizeValue);
@@ -47,39 +69,16 @@ function createErrors(milValue: string, sizeValue: string): FieldErrors {
 }
 
 export function HomePage() {
-  const defaultPresetLabel = "20 cm target";
-  const [milInput, setMilInput] = useState(() => {
-    if (typeof window === "undefined") {
-      return "";
-    }
-
-    return new URLSearchParams(window.location.search).get("mil") ?? "";
-  });
-  const [sizeInput, setSizeInput] = useState(() => {
-    if (typeof window === "undefined") {
-      return presetByLabel.get(defaultPresetLabel)?.toString() ?? "20";
-    }
-
-    return (
-      new URLSearchParams(window.location.search).get("size") ??
-      presetByLabel.get(defaultPresetLabel)?.toString() ??
-      "20"
-    );
-  });
-  const [selectedPreset, setSelectedPreset] = useState(() => {
-    if (typeof window === "undefined") {
-      return defaultPresetLabel;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    return params.get("label") ?? defaultPresetLabel;
-  });
+  const initialInputs = getInitialInputs();
+  const [milInput, setMilInput] = useState(initialInputs.milInput);
+  const [sizeInput, setSizeInput] = useState(initialInputs.sizeInput);
+  const [selectedPreset, setSelectedPreset] = useState(initialInputs.selectedPreset);
   const [history, setHistory] = useState<HistoryItem[]>(() => {
     if (typeof window === "undefined") {
       return [];
     }
 
-    return readStoredJson<HistoryItem[]>(HISTORY_STORAGE_KEY, []);
+    return readStoredJson<HistoryItem[]>(HISTORY_STORAGE_KEY, []).slice(0, HISTORY_LIMIT);
   });
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -93,6 +92,15 @@ export function HomePage() {
   const sizeNumber = parsePositiveNumber(sizeInput);
   const distance = milNumber && sizeNumber ? calculateDistanceMeters(sizeNumber, milNumber) : null;
   const hasValidResult = distance !== null && Object.keys(errors).length === 0;
+  const isEntryAlreadySaved =
+    hasValidResult && milNumber !== null && sizeNumber !== null
+      ? history.some(
+          (item) =>
+            item.label === (selectedPreset || "Custom") &&
+            item.targetSizeCm === sizeNumber &&
+            item.milReading === milNumber,
+        )
+      : false;
 
   useEffect(() => {
     if (!isPresetModalOpen) {
@@ -116,18 +124,18 @@ export function HomePage() {
   }, [isPresetModalOpen]);
 
   useEffect(() => {
-    if (presetSize === undefined) {
-      return;
+    const storedHistory = readStoredJson<HistoryItem[]>(HISTORY_STORAGE_KEY, []);
+    if (storedHistory.length > HISTORY_LIMIT) {
+      window.localStorage.setItem(
+        HISTORY_STORAGE_KEY,
+        JSON.stringify(storedHistory.slice(0, HISTORY_LIMIT)),
+      );
     }
+  }, []);
 
-    const presetValue = presetSize.toString();
-    if (sizeInput !== presetValue) {
-      setSizeInput(presetValue);
-    }
-  }, [presetSize, sizeInput]);
-
-  useEffect(() => {
+  function saveCurrentResult() {
     if (!hasValidResult || milNumber === null || sizeNumber === null || distance === null) {
+      setShowErrors(true);
       return;
     }
 
@@ -136,42 +144,30 @@ export function HomePage() {
       return;
     }
 
-    const timer = window.setTimeout(() => {
-      const item: HistoryItem = {
-        label: selectedPreset || "Custom",
-        targetSizeCm: sizeNumber,
-        milReading: milNumber,
-        resultMeters: distance,
-        createdAt: new Date().toISOString(),
-      };
+    const item: HistoryItem = {
+      label: selectedPreset || "Custom",
+      targetSizeCm: sizeNumber,
+      milReading: milNumber,
+      resultMeters: distance,
+      createdAt: new Date().toISOString(),
+    };
 
-      const nextHistory = [item, ...history]
-        .filter(
-          (entry, index, entries) =>
-            entries.findIndex(
-              (candidate) =>
-                candidate.label === entry.label &&
-                candidate.targetSizeCm === entry.targetSizeCm &&
-                candidate.milReading === entry.milReading,
-            ) === index,
-        )
-        .slice(0, HISTORY_LIMIT);
+    const nextHistory = [item, ...history]
+      .filter(
+        (entry, index, entries) =>
+          entries.findIndex(
+            (candidate) =>
+              candidate.label === entry.label &&
+              candidate.targetSizeCm === entry.targetSizeCm &&
+              candidate.milReading === entry.milReading,
+          ) === index,
+      )
+      .slice(0, HISTORY_LIMIT);
 
-      setHistory(nextHistory);
-      setLastSavedKey(saveKey);
-      window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
-    }, 350);
-
-    return () => window.clearTimeout(timer);
-  }, [
-    distance,
-    hasValidResult,
-    history,
-    lastSavedKey,
-    milNumber,
-    selectedPreset,
-    sizeNumber,
-  ]);
+    setHistory(nextHistory);
+    setLastSavedKey(saveKey);
+    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+  }
 
   function selectPreset(label: string, sizeCm: number) {
     setSelectedPreset(label);
@@ -204,41 +200,33 @@ export function HomePage() {
   }
 
   function loadHistoryItem(item: HistoryItem) {
+    const presetSizeFromLabel = presetByLabel.get(item.label);
+    const saveKey = `${item.label}|${item.targetSizeCm}|${item.milReading}|${item.resultMeters.toFixed(4)}`;
+
     setMilInput(item.milReading.toString());
-    setSizeInput(item.targetSizeCm.toString());
+    setSizeInput((presetSizeFromLabel ?? item.targetSizeCm).toString());
     setSelectedPreset(item.label);
+    setLastSavedKey(saveKey);
     window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify(item.label));
   }
 
   return (
     <main className="flex-1 py-3 sm:py-10">
       <div className="app-shell space-y-3 sm:space-y-4">
-        <Card title="Result" subtitle="Distance (m) = Size (cm) x 10 / mil">
-          {hasValidResult && distance !== null ? (
-            <div className="rounded-2xl bg-black/24 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/55">Estimated distance</p>
-              <p className="mt-2 text-4xl font-bold tracking-tight text-accent">
-                {formatMeters(distance, 1)}
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-2xl bg-black/14 p-4 text-sm leading-6 text-white/64">
-              Enter a valid mil reading and target size above zero to show the distance result.
-            </div>
-          )}
-        </Card>
-
         <Card
           title="MIL Range Finder"
-          subtitle="Preset or manual size. Distance in meters."
+          subtitle="Distance in meters."
         >
           <div className="space-y-4">
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-black/18 p-2">
+              <span className="mb-2 block text-sm font-medium text-white/82">
+                Target size (cm)
+              </span>
+              <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-black/18 p-1.5">
                 <button
                   type="button"
                   onClick={() => setIsPresetModalOpen(true)}
-                  className={`min-h-12 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                  className={`min-h-10 rounded-xl px-3 py-2 text-xs font-medium transition ${
                     inputMode === "preset"
                       ? "bg-accent text-[#182015]"
                       : "bg-transparent text-white/72"
@@ -249,25 +237,38 @@ export function HomePage() {
                 <button
                   type="button"
                   onClick={clearPresetSelection}
-                  className={`min-h-12 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                  className={`min-h-10 rounded-xl px-3 py-2 text-xs font-medium transition ${
                     inputMode === "manual"
                       ? "bg-accent text-[#182015]"
                       : "bg-transparent text-white/72"
                   }`}
                 >
-                  Manual
+                  Custom
                 </button>
               </div>
-
-              <div className="rounded-2xl bg-black/18 px-4 py-3 text-sm text-white/62">
-                {inputMode === "preset" ? (
-                  <>
-                    Preset: <span className="font-medium text-white">{selectedPreset}</span>
-                  </>
-                ) : (
-                  <>Manual target size</>
-                )}
-              </div>
+              <input
+                inputMode="decimal"
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={sizeInput}
+                readOnly={isTargetSizeLocked}
+                disabled={isTargetSizeLocked}
+                onChange={(event) => {
+                  onTargetSizeChange(event.target.value);
+                  setShowErrors(false);
+                }}
+                placeholder={isTargetSizeLocked ? "Preset selected" : "Example: 30"}
+                className={`min-h-10 w-full rounded-xl border px-3 py-2 text-base outline-none transition ${
+                  isTargetSizeLocked
+                    ? "cursor-not-allowed border-white/6 bg-white/6 text-white/45"
+                    : "border-white/10 bg-black/20 focus:border-emerald-300/60"
+                }`}
+              />
+              <p className="mt-2 text-sm text-white/62">
+                Target size preset: <span className="font-medium text-white">{selectedPreset}</span>
+              </p>
+              {showErrors && errors.size ? <p className="mt-2 text-sm danger">{errors.size}</p> : null}
             </div>
 
             <label className="block">
@@ -283,41 +284,39 @@ export function HomePage() {
                   setShowErrors(false);
                 }}
                 placeholder="Example: 2.4"
-                className="min-h-13 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-lg outline-none transition focus:border-emerald-300/60"
+                className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
               />
               {showErrors && errors.mil ? <p className="mt-2 text-sm danger">{errors.mil}</p> : null}
             </label>
 
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-white/82">
-                Target size (cm)
-              </span>
-              <input
-                inputMode="decimal"
-                type="number"
-                min="0.1"
-                step="0.1"
-                value={sizeInput}
-                readOnly={isTargetSizeLocked}
-                disabled={isTargetSizeLocked}
-                onChange={(event) => {
-                  onTargetSizeChange(event.target.value);
-                  setShowErrors(false);
-                }}
-                placeholder={isTargetSizeLocked ? "Preset selected" : "Example: 30"}
-                className={`min-h-13 w-full rounded-2xl border px-4 py-3 text-lg outline-none transition ${
-                  isTargetSizeLocked
-                    ? "cursor-not-allowed border-white/6 bg-white/6 text-white/45"
-                    : "border-white/10 bg-black/20 focus:border-emerald-300/60"
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-white/82">Result</p>
+              {hasValidResult && distance !== null ? (
+                <div className="rounded-2xl bg-black/24 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/55">Estimated distance</p>
+                  <p className="mt-2 text-4xl font-bold tracking-tight text-accent">
+                    {formatMeters(distance, 1)}
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-black/14 p-4 text-sm leading-6 text-white/64">
+                  Enter a valid mil reading and target size above zero to show the distance result.
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={saveCurrentResult}
+                disabled={!hasValidResult || isEntryAlreadySaved}
+                className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                  hasValidResult && !isEntryAlreadySaved
+                    ? "bg-accent text-[#182015]"
+                    : "cursor-not-allowed bg-white/6 text-white/35"
                 }`}
-              />
-              {isTargetSizeLocked ? (
-                <p className="mt-2 text-sm text-white/52">Switch to Manual to edit target size.</p>
-              ) : null}
-              {showErrors && errors.size ? <p className="mt-2 text-sm danger">{errors.size}</p> : null}
-            </label>
-
-            <div>
+              >
+                Save
+              </button>
               <button
                 type="button"
                 onClick={clearAll}
@@ -362,14 +361,6 @@ export function HomePage() {
                 No saved calculations yet. Use Calculate to keep the last five results.
               </div>
             )}
-          </div>
-        </Card>
-
-        <Card title="Field Note">
-          <div className="space-y-2 text-sm leading-6 text-white/76">
-            <p className="font-medium text-accent">Standard MIL</p>
-            <p className="mono">1 major line = 1 mil</p>
-            <p>Do not assume 5 mil per line unless your binocular specifically says so.</p>
           </div>
         </Card>
 
