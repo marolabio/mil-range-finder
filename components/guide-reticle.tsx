@@ -3,9 +3,9 @@
 import type { HelperMode } from "@/lib/range-finder";
 
 const helperDescriptions: Record<HelperMode, string> = {
-  "1.0": "Major lines only for full mil spacing.",
-  "0.5": "Adds half-mil reference marks between each major line.",
-  "0.2": "Adds fine 0.2 mil subdivisions for careful readings.",
+  "1.0": "Major lines only.",
+  "0.5": "Adds half-mil marks.",
+  "0.2": "Adds 0.2 mil marks.",
 };
 
 type GuideReticleProps = {
@@ -111,7 +111,7 @@ export function GuideReticle({ mode, onModeChange }: GuideReticleProps) {
       </div>
 
       <div className="rounded-2xl surface-soft p-4 text-sm leading-6 text-white/78">
-        <p className="font-medium text-accent">Default assumption: 1 major line = 1 mil</p>
+        <p className="font-medium text-accent">Default: 1 major line = 1 mil</p>
         <p className="mt-1">{helperDescriptions[mode]}</p>
       </div>
     </div>

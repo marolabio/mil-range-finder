@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Card } from "@/components/card";
 import {
   calculateDistanceMeters,
+  type HomePageInputs,
   formatMeters,
   HISTORY_LIMIT,
   HISTORY_STORAGE_KEY,
@@ -20,32 +21,29 @@ type FieldErrors = {
   size?: string;
 };
 
+type HomePageProps = {
+  initialInputs: HomePageInputs;
+};
+
 const presetByLabel = new Map(
   presetGroups.flatMap((group) =>
     group.presets.map((preset) => [preset.label, preset.sizeCm] as const),
   ),
 );
 
-function getInitialInputs() {
-  const defaultPresetLabel = "20 cm target";
+function subscribeToStorage(callback: () => void) {
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+  };
+}
 
+function readStoredHistoryRaw() {
   if (typeof window === "undefined") {
-    return {
-      milInput: "",
-      selectedPreset: defaultPresetLabel,
-      sizeInput: presetByLabel.get(defaultPresetLabel)?.toString() ?? "20",
-    };
+    return "[]";
   }
 
-  const params = new URLSearchParams(window.location.search);
-  const selectedPreset = params.get("label") ?? defaultPresetLabel;
-  const presetSize = presetByLabel.get(selectedPreset);
-
-  return {
-    milInput: params.get("mil") ?? "",
-    selectedPreset,
-    sizeInput: params.get("size") ?? presetSize?.toString() ?? "20",
-  };
+  return window.localStorage.getItem(HISTORY_STORAGE_KEY) ?? "[]";
 }
 
 function createErrors(milValue: string, sizeValue: string): FieldErrors {
@@ -68,20 +66,23 @@ function createErrors(milValue: string, sizeValue: string): FieldErrors {
   return errors;
 }
 
-export function HomePage() {
-  const initialInputs = getInitialInputs();
+export function HomePage({ initialInputs }: HomePageProps) {
   const [milInput, setMilInput] = useState(initialInputs.milInput);
   const [sizeInput, setSizeInput] = useState(initialInputs.sizeInput);
   const [selectedPreset, setSelectedPreset] = useState(initialInputs.selectedPreset);
-  const [history, setHistory] = useState<HistoryItem[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-
-    return readStoredJson<HistoryItem[]>(HISTORY_STORAGE_KEY, []).slice(0, HISTORY_LIMIT);
-  });
+  const storedHistoryRaw = useSyncExternalStore(subscribeToStorage, readStoredHistoryRaw, () => "[]");
+  const [historyOverride, setHistoryOverride] = useState<HistoryItem[] | null>(null);
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
   const [lastSavedKey, setLastSavedKey] = useState("");
+  const storedHistory = useMemo(() => {
+    try {
+      const parsed = JSON.parse(storedHistoryRaw) as HistoryItem[];
+      return Array.isArray(parsed) ? parsed.slice(0, HISTORY_LIMIT) : [];
+    } catch {
+      return [];
+    }
+  }, [storedHistoryRaw]);
+  const history = historyOverride ?? storedHistory;
   const presetSize = presetByLabel.get(selectedPreset);
   const inputMode = presetSize === undefined ? "manual" : "preset";
   const isTargetSizeLocked = inputMode === "preset";
@@ -162,7 +163,7 @@ export function HomePage() {
       )
       .slice(0, HISTORY_LIMIT);
 
-    setHistory(nextHistory);
+    setHistoryOverride(nextHistory);
     setLastSavedKey(saveKey);
     window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
   }
@@ -283,7 +284,6 @@ export function HomePage() {
             </label>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium text-white/82">Result</p>
               {hasValidResult && distance !== null ? (
                 <div className="rounded-2xl bg-black/24 p-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/55">Estimated distance</p>

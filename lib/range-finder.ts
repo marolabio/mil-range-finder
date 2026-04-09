@@ -2,6 +2,8 @@ export const HISTORY_LIMIT = 5;
 export const GUIDE_MODE_STORAGE_KEY = "mil-guide-helper-mode";
 export const HISTORY_STORAGE_KEY = "mil-range-history";
 export const LAST_PRESET_STORAGE_KEY = "mil-last-preset";
+export const DEFAULT_PRESET_LABEL = "20 cm target";
+export const DEFAULT_SIZE_INPUT = "20";
 
 export type Preset = {
   label: string;
@@ -23,6 +25,12 @@ export type HistoryItem = {
 };
 
 export type HelperMode = "1.0" | "0.5" | "0.2";
+
+export type HomePageInputs = {
+  milInput: string;
+  selectedPreset: string;
+  sizeInput: string;
+};
 
 export const presetGroups: PresetGroup[] = [
   {
@@ -70,6 +78,34 @@ export const quickReferenceRows = [
   { label: "10 cm at 2 mil", result: "50 m" },
   { label: "20 cm at 4 mil", result: "50 m" },
 ];
+
+const presetByLabel = new Map(
+  presetGroups.flatMap((group) =>
+    group.presets.map((preset) => [preset.label, preset.sizeCm] as const),
+  ),
+);
+
+export function getHomePageInputs(
+  searchParams: Record<string, string | string[] | undefined>,
+): HomePageInputs {
+  const labelValue = searchParams.label;
+  const milValue = searchParams.mil;
+  const sizeValue = searchParams.size;
+  const selectedPreset =
+    (Array.isArray(labelValue) ? labelValue[0] : labelValue) ?? DEFAULT_PRESET_LABEL;
+  const presetSize = presetByLabel.get(selectedPreset);
+  const milInput = Array.isArray(milValue) ? milValue[0] ?? "" : milValue ?? "";
+  const sizeInput =
+    (Array.isArray(sizeValue) ? sizeValue[0] : sizeValue) ??
+    presetSize?.toString() ??
+    DEFAULT_SIZE_INPUT;
+
+  return {
+    milInput,
+    selectedPreset,
+    sizeInput,
+  };
+}
 
 export function calculateDistanceMeters(sizeCm: number, milReading: number) {
   if (!Number.isFinite(sizeCm) || !Number.isFinite(milReading) || sizeCm <= 0 || milReading <= 0) {
