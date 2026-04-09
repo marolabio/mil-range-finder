@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="MIL Range Finder icon">
+  <rect width="192" height="192" rx="38" fill="#111511"/>
+  <rect x="16" y="16" width="160" height="160" rx="30" fill="#1b231b" stroke="#4f6b47" stroke-width="4"/>
+  <path d="M96 32v128M32 96h128" stroke="#d3e395" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="96" cy="96" r="22" fill="none" stroke="#9fc267" stroke-width="7"/>
+  <path d="M52 52h24M116 52h24M52 140h24M116 140h24" stroke="#9fc267" stroke-width="6" stroke-linecap="round"/>
+</svg>
