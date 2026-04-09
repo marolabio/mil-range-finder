@@ -343,7 +343,7 @@ export function HomePage() {
               ))
             ) : (
               <div className="rounded-2xl border border-dashed border-white/12 bg-black/14 p-4 text-sm text-white/58">
-                No saved calculations yet. Use Calculate to keep the last five results.
+                No saved calculation yet.
               </div>
             )}
           </div>
