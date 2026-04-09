@@ -20,7 +20,7 @@ function subscribeToStorage(callback: () => void) {
 }
 
 export function GuidePage() {
-  const storedMode = useSyncExternalStore(
+  const storedMode = useSyncExternalStore<HelperMode>(
     subscribeToStorage,
     () => readStoredJson<HelperMode>(GUIDE_MODE_STORAGE_KEY, "1.0"),
     () => "1.0",
