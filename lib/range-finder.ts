@@ -27,30 +27,23 @@ export type HelperMode = "1.0" | "0.5" | "0.2";
 export const presetGroups: PresetGroup[] = [
   {
     id: "birds",
-    title: "Edible Bird Body-Size",
+    title: "Bird Body Size",
     presets: [
-      { label: "Zebra Dove / Tukmo", sizeCm: 21 },
+      { label: "Zebra Dove", sizeCm: 21 },
       { label: "Spotted Dove", sizeCm: 30 },
       { label: "Quail", sizeCm: 18 },
+      { label: "Crow", sizeCm: 40 },
+      { label: "Chicken", sizeCm: 35 },
       { label: "Small Dove", sizeCm: 20 },
       { label: "Medium Dove", sizeCm: 25 },
       { label: "Large Dove", sizeCm: 30 },
     ],
   },
   {
-    id: "heads",
-    title: "Headshot Quick",
-    presets: [
-      { label: "Small head", sizeCm: 5 },
-      { label: "Large head", sizeCm: 6 },
-      { label: "Crow head", sizeCm: 5 },
-      { label: "Chicken head", sizeCm: 6 },
-    ],
-  },
-  {
     id: "targets",
     title: "Target Practice",
     presets: [
+      { label: "5 cm target", sizeCm: 5 },
       { label: "10 cm target", sizeCm: 10 },
       { label: "20 cm target", sizeCm: 20 },
       { label: "25 cm target", sizeCm: 25 },
