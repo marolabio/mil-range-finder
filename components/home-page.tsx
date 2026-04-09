@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/card";
 import {
   calculateDistanceMeters,
-  formatExactMeters,
   formatMeters,
   HISTORY_LIMIT,
   HISTORY_STORAGE_KEY,
@@ -73,10 +72,7 @@ export function HomePage() {
     }
 
     const params = new URLSearchParams(window.location.search);
-    return (
-      params.get("label") ??
-      readStoredJson<string>(LAST_PRESET_STORAGE_KEY, defaultPresetLabel)
-    );
+    return params.get("label") ?? defaultPresetLabel;
   });
   const [history, setHistory] = useState<HistoryItem[]>(() => {
     if (typeof window === "undefined") {
@@ -219,23 +215,11 @@ export function HomePage() {
       <div className="app-shell space-y-3 sm:space-y-4">
         <Card title="Result" subtitle="Distance (m) = Size (cm) x 10 / mil">
           {hasValidResult && distance !== null ? (
-            <div className="space-y-3">
-              <div className="rounded-2xl bg-black/24 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-white/55">Estimated distance</p>
-                <p className="mt-2 text-4xl font-bold tracking-tight text-accent">
-                  {formatMeters(distance, 1)}
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <div className="rounded-2xl surface-soft p-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/55">Exact</p>
-                  <p className="mt-2 mono text-base">{formatExactMeters(distance)}</p>
-                </div>
-                <div className="rounded-2xl surface-soft p-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/55">Whole meter</p>
-                  <p className="mt-2 mono text-base">{Math.round(distance)} m</p>
-                </div>
-              </div>
+            <div className="rounded-2xl bg-black/24 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/55">Estimated distance</p>
+              <p className="mt-2 text-4xl font-bold tracking-tight text-accent">
+                {formatMeters(distance, 1)}
+              </p>
             </div>
           ) : (
             <div className="rounded-2xl bg-black/14 p-4 text-sm leading-6 text-white/64">
@@ -354,14 +338,6 @@ export function HomePage() {
           </div>
         </Card>
 
-        <Card title="Field Note">
-          <div className="space-y-2 text-sm leading-6 text-white/76">
-            <p className="font-medium text-accent">Standard MIL</p>
-            <p className="mono">1 major line = 1 mil</p>
-            <p>Do not assume 5 mil per line unless your binocular specifically says so.</p>
-          </div>
-        </Card>
-
         <Card title="Recent History" subtitle="Last 5 saved calculations are stored on this device.">
           <div className="space-y-2">
             {history.length > 0 ? (
@@ -386,6 +362,14 @@ export function HomePage() {
                 No saved calculations yet. Use Calculate to keep the last five results.
               </div>
             )}
+          </div>
+        </Card>
+
+        <Card title="Field Note">
+          <div className="space-y-2 text-sm leading-6 text-white/76">
+            <p className="font-medium text-accent">Standard MIL</p>
+            <p className="mono">1 major line = 1 mil</p>
+            <p>Do not assume 5 mil per line unless your binocular specifically says so.</p>
           </div>
         </Card>
 
