@@ -81,7 +81,6 @@ export function HomePage() {
     return readStoredJson<HistoryItem[]>(HISTORY_STORAGE_KEY, []).slice(0, HISTORY_LIMIT);
   });
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
-  const [showErrors, setShowErrors] = useState(false);
   const [lastSavedKey, setLastSavedKey] = useState("");
   const presetSize = presetByLabel.get(selectedPreset);
   const inputMode = presetSize === undefined ? "manual" : "preset";
@@ -135,7 +134,6 @@ export function HomePage() {
 
   function saveCurrentResult() {
     if (!hasValidResult || milNumber === null || sizeNumber === null || distance === null) {
-      setShowErrors(true);
       return;
     }
 
@@ -188,7 +186,6 @@ export function HomePage() {
     setMilInput("");
     setSizeInput("");
     setSelectedPreset("Custom");
-    setShowErrors(false);
     setLastSavedKey("");
     window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify("Custom"));
   }
@@ -219,9 +216,12 @@ export function HomePage() {
         >
           <div className="space-y-4">
             <div className="space-y-3">
-              <span className="mb-2 block text-sm font-medium text-white/82">
-                Target size (cm)
-              </span>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-white/82">Target size (cm)</span>
+                <span className="text-xs text-white/62">
+                  Preset: <span className="font-medium text-white">{selectedPreset}</span>
+                </span>
+              </div>
               <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-black/18 p-1.5">
                 <button
                   type="button"
@@ -256,19 +256,14 @@ export function HomePage() {
                 disabled={isTargetSizeLocked}
                 onChange={(event) => {
                   onTargetSizeChange(event.target.value);
-                  setShowErrors(false);
                 }}
-                placeholder={isTargetSizeLocked ? "Preset selected" : "Example: 30"}
+                placeholder={isTargetSizeLocked ? "Preset selected" : ""}
                 className={`min-h-10 w-full rounded-xl border px-3 py-2 text-base outline-none transition ${
                   isTargetSizeLocked
                     ? "cursor-not-allowed border-white/6 bg-white/6 text-white/45"
                     : "border-white/10 bg-black/20 focus:border-emerald-300/60"
                 }`}
               />
-              <p className="mt-2 text-sm text-white/62">
-                Target size preset: <span className="font-medium text-white">{selectedPreset}</span>
-              </p>
-              {showErrors && errors.size ? <p className="mt-2 text-sm danger">{errors.size}</p> : null}
             </div>
 
             <label className="block">
@@ -281,12 +276,10 @@ export function HomePage() {
                 value={milInput}
                 onChange={(event) => {
                   setMilInput(event.target.value);
-                  setShowErrors(false);
                 }}
-                placeholder="Example: 2.4"
+                placeholder=""
                 className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
               />
-              {showErrors && errors.mil ? <p className="mt-2 text-sm danger">{errors.mil}</p> : null}
             </label>
 
             <div className="space-y-2">
@@ -299,8 +292,9 @@ export function HomePage() {
                   </p>
                 </div>
               ) : (
-                <div className="rounded-2xl bg-black/14 p-4 text-sm leading-6 text-white/64">
-                  Enter a valid mil reading and target size above zero to show the distance result.
+                <div className="rounded-2xl bg-black/24 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/55">Estimated distance</p>
+                  <p className="mt-2 text-4xl font-bold tracking-tight text-white/35">0 m</p>
                 </div>
               )}
             </div>
@@ -325,15 +319,6 @@ export function HomePage() {
                 Clear All
               </button>
             </div>
-            {!hasValidResult && (milInput.trim() !== "" || sizeInput.trim() !== "") ? (
-              <button
-                type="button"
-                onClick={() => setShowErrors(true)}
-                className="text-sm text-white/60 underline underline-offset-4"
-              >
-                Show input errors
-              </button>
-            ) : null}
           </div>
         </Card>
 
