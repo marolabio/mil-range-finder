@@ -12,7 +12,7 @@ export function AppMenu() {
   const pathname = usePathname();
 
   return (
-    <header className="pt-2 pb-1 sm:pt-4 sm:pb-1">
+    <footer className="fixed inset-x-0 bottom-0 z-40 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2">
       <div className="app-shell">
         <nav className="field-card flex items-center gap-2 rounded-2xl p-2" aria-label="Main menu">
           {menuItems.map((item) => {
@@ -33,6 +33,6 @@ export function AppMenu() {
           })}
         </nav>
       </div>
-    </header>
+    </footer>
   );
 }

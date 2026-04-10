@@ -37,6 +37,7 @@ body {
   color: var(--foreground);
   font-family: "Segoe UI", "Arial Narrow", Arial, sans-serif;
   min-height: 100vh;
+  padding-bottom: 5.75rem;
   background-image:
     linear-gradient(rgba(149, 173, 132, 0.08) 1px, transparent 1px),
     linear-gradient(90deg, rgba(149, 173, 132, 0.08) 1px, transparent 1px),
