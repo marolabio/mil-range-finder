@@ -1,13 +1,62 @@
-const CACHE_NAME = "mil-range-finder-v2";
-const STATIC_ASSETS = [
+const CACHE_NAME = "mil-range-finder-v3";
+const APP_SHELL_CACHE = [
+  "/",
+  "/guide",
   "/manifest.webmanifest",
+  "/favicon.ico",
   "/icons/icon-192.svg",
   "/icons/icon-512.svg",
   "/icons/maskable-icon.svg",
 ];
 
+function isSuccessfulResponse(response) {
+  return Boolean(response && response.ok);
+}
+
+async function putInCache(request, response) {
+  if (!isSuccessfulResponse(response)) {
+    return response;
+  }
+
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(request, response.clone());
+  return response;
+}
+
+async function networkFirst(request, fallbackPath = "/") {
+  try {
+    const response = await fetch(request);
+    return await putInCache(request, response);
+  } catch {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    return caches.match(fallbackPath);
+  }
+}
+
+async function staleWhileRevalidate(request) {
+  const cachedResponse = await caches.match(request);
+  const networkResponsePromise = fetch(request)
+    .then((response) => putInCache(request, response))
+    .catch(() => null);
+
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
+  const networkResponse = await networkResponsePromise;
+  if (networkResponse) {
+    return networkResponse;
+  }
+
+  return Response.error();
+}
+
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)));
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL_CACHE)));
   self.skipWaiting();
 });
 
@@ -41,28 +90,19 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const isDocument = request.mode === "navigate";
-  const isStaticAsset =
-    url.pathname.startsWith("/icons/") ||
-    url.pathname === "/manifest.webmanifest";
+  const isNavigationRequest = request.mode === "navigate";
+  const isNextStaticAsset = url.pathname.startsWith("/_next/static/");
+  const isAppShellAsset =
+    url.pathname === "/manifest.webmanifest" ||
+    url.pathname === "/favicon.ico" ||
+    url.pathname.startsWith("/icons/");
 
-  if (isDocument) {
+  if (isNavigationRequest) {
+    event.respondWith(networkFirst(request));
     return;
   }
 
-  if (isStaticAsset) {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) {
-          return cached;
-        }
-
-        return fetch(request).then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return response;
-        });
-      }),
-    );
+  if (isNextStaticAsset || isAppShellAsset) {
+    event.respondWith(staleWhileRevalidate(request));
   }
 });
