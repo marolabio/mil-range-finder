@@ -2,8 +2,8 @@ export const HISTORY_LIMIT = 5;
 export const GUIDE_MODE_STORAGE_KEY = "mil-guide-helper-mode";
 export const HISTORY_STORAGE_KEY = "mil-range-history";
 export const LAST_PRESET_STORAGE_KEY = "mil-last-preset";
-export const DEFAULT_PRESET_LABEL = "20 cm target";
-export const DEFAULT_SIZE_INPUT = "20";
+export const DEFAULT_PRESET_LABEL = "4 cm target";
+export const DEFAULT_SIZE_INPUT = "4";
 
 export type Preset = {
   label: string;
