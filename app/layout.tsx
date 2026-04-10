@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppMenu } from "@/components/app-menu";
 import { PwaRegistration } from "@/components/pwa-registration";
 import "./globals.css";
 
@@ -37,6 +38,7 @@ export default function RootLayout({
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         <PwaRegistration />
+        <AppMenu />
         {children}
       </body>
     </html>

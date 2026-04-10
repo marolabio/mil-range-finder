@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import { Card } from "@/components/card";
 import { GuideReticle } from "@/components/guide-reticle";
 import {
   GUIDE_MODE_STORAGE_KEY,
-  guideExamples,
-  quickReferenceRows,
+  quickReferenceTabs,
   readStoredJson,
   type HelperMode,
 } from "@/lib/range-finder";
@@ -26,7 +24,10 @@ export function GuidePage() {
     () => "1.0",
   );
   const [modeOverride, setModeOverride] = useState<HelperMode | null>(null);
+  const [activeQuickReferenceTab, setActiveQuickReferenceTab] = useState(quickReferenceTabs[0]?.id ?? "");
   const mode = modeOverride ?? storedMode;
+  const selectedQuickReferenceTab =
+    quickReferenceTabs.find((tab) => tab.id === activeQuickReferenceTab) ?? quickReferenceTabs[0];
 
   function handleModeChange(nextMode: HelperMode) {
     setModeOverride(nextMode);
@@ -34,7 +35,7 @@ export function GuidePage() {
   }
 
   return (
-    <main className="flex-1 py-6 sm:py-10">
+    <main className="flex-1 pt-1 pb-6 sm:pt-1 sm:pb-10">
       <div className="app-shell space-y-4 sm:space-y-5">
         <Card title="MIL Guide" subtitle="Read mils. Estimate distance.">
           <div className="rounded-2xl surface-soft p-4 text-sm leading-6 text-white/78">
@@ -44,6 +45,41 @@ export function GuidePage() {
 
         <Card title="Reticle Demo" subtitle="Standard 1 to 10 mil scale">
           <GuideReticle mode={mode} onModeChange={handleModeChange} />
+        </Card>
+
+        <Card title="Quick Reference">
+          <div className="space-y-3">
+            <div className="flex gap-2 overflow-x-auto rounded-2xl bg-black/18 p-2">
+              {quickReferenceTabs.map((tab) => {
+                const isActive = tab.id === selectedQuickReferenceTab.id;
+
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveQuickReferenceTab(tab.id)}
+                    className={`shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      isActive ? "bg-accent text-[#182015]" : "text-white/72"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="space-y-2">
+            {selectedQuickReferenceTab.rows.map((row) => (
+              <div
+                key={row.label}
+                className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3"
+              >
+                <p className="text-sm text-white/76">{row.label}</p>
+                <p className="mono text-sm text-accent">{row.result}</p>
+              </div>
+            ))}
+            </div>
+          </div>
         </Card>
 
         <Card title="Basics" subtitle="MIL ranging in short">
@@ -56,73 +92,6 @@ export function GuidePage() {
             </div>
           </div>
         </Card>
-
-        <Card title="Examples" subtitle="Tap to load in the calculator">
-          <div className="space-y-2">
-            {guideExamples.map((example) => (
-              <Link
-                key={`${example.label}-${example.mil}`}
-                href={`/?label=${encodeURIComponent(example.label)}&size=${example.sizeCm}&mil=${example.mil}`}
-                className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3"
-              >
-                <div>
-                  <p className="font-medium">{example.label}</p>
-                  <p className="mt-1 text-sm text-white/60">
-                    {example.sizeCm} cm at {example.mil} mil
-                  </p>
-                </div>
-                <p className="mono text-accent">{example.resultMeters} m</p>
-              </Link>
-            ))}
-          </div>
-        </Card>
-
-        <Card title="Reticle Settings" subtitle="Use the standard layout unless marked otherwise">
-          <div className="space-y-3 text-sm leading-6 text-white/78">
-            <div className="rounded-2xl surface-soft p-4">
-              <p className="font-medium text-accent">Standard MIL: 1 major line = 1 mil</p>
-            </div>
-            <p>Custom scale is not supported yet.</p>
-            <p className="danger">Check your reticle markings before using the reading.</p>
-          </div>
-        </Card>
-
-        <Card title="Field Note">
-          <div className="space-y-2 text-sm leading-6 text-white/76">
-            <p className="font-medium text-accent">Standard MIL</p>
-            <p className="mono">1 major line = 1 mil</p>
-            <p>Do not assume 5 mil per line unless your binocular says so.</p>
-          </div>
-        </Card>
-
-        <Card title="Quick Reference" subtitle="Common size and distance pairs">
-          <div className="space-y-2">
-            {quickReferenceRows.map((row) => (
-              <div
-                key={row.label}
-                className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3"
-              >
-                <p className="text-sm text-white/76">{row.label}</p>
-                <p className="mono text-sm text-accent">{row.result}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-2 gap-2">
-          <Link
-            href="/"
-            className="flex min-h-14 items-center justify-center rounded-2xl bg-accent px-4 text-base font-semibold text-[#182015]"
-          >
-            Open Calculator
-          </Link>
-          <Link
-            href="/"
-            className="flex min-h-14 items-center justify-center rounded-2xl border border-white/12 bg-white/5 px-4 text-base font-medium text-white"
-          >
-            Back to Home
-          </Link>
-        </div>
       </div>
     </main>
   );

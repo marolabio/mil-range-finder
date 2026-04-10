@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Card } from "@/components/card";
 import {
@@ -83,9 +82,6 @@ export function HomePage({ initialInputs }: HomePageProps) {
     }
   }, [storedHistoryRaw]);
   const history = historyOverride ?? storedHistory;
-  const presetSize = presetByLabel.get(selectedPreset);
-  const inputMode = presetSize === undefined ? "manual" : "preset";
-  const isTargetSizeLocked = inputMode === "preset";
 
   const errors = useMemo(() => createErrors(milInput, sizeInput), [milInput, sizeInput]);
   const milNumber = parsePositiveNumber(milInput);
@@ -191,12 +187,6 @@ export function HomePage({ initialInputs }: HomePageProps) {
     window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify("Custom"));
   }
 
-  function clearPresetSelection() {
-    setSelectedPreset("Custom");
-    window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify("Custom"));
-    setIsPresetModalOpen(false);
-  }
-
   function loadHistoryItem(item: HistoryItem) {
     const presetSizeFromLabel = presetByLabel.get(item.label);
     const saveKey = `${item.label}|${item.targetSizeCm}|${item.milReading}|${item.resultMeters.toFixed(4)}`;
@@ -208,67 +198,35 @@ export function HomePage({ initialInputs }: HomePageProps) {
     window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify(item.label));
   }
 
+  function deleteHistoryItem(itemToDelete: HistoryItem) {
+    const nextHistory = history.filter(
+      (item) =>
+        !(
+          item.createdAt === itemToDelete.createdAt &&
+          item.label === itemToDelete.label &&
+          item.targetSizeCm === itemToDelete.targetSizeCm &&
+          item.milReading === itemToDelete.milReading
+        ),
+    );
+
+    setHistoryOverride(nextHistory);
+    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+  }
+
   return (
-    <main className="flex-1 py-3 sm:py-10">
+    <main className="flex-1 pt-1 pb-3 sm:pt-1 sm:pb-10">
       <div className="app-shell space-y-3 sm:space-y-4">
-        <Card
-          title="MIL Range Finder"
-          subtitle="Distance in meters."
-        >
+        <Card title="MIL Range Finder">
           <div className="space-y-4">
-            <div className="space-y-3">
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium text-white/82">Target size (cm)</span>
-                <span className="text-xs text-white/62">
-                  Preset: <span className="font-medium text-white">{selectedPreset}</span>
+            <label className="block">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/58">
+                  MIL Reading
+                </span>
+                <span className="rounded-md bg-white/6 px-2 py-1 text-[11px] font-medium text-white/56">
+                  mil
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-black/18 p-1.5">
-                <button
-                  type="button"
-                  onClick={() => setIsPresetModalOpen(true)}
-                  className={`min-h-10 rounded-xl px-3 py-2 text-xs font-medium transition ${
-                    inputMode === "preset"
-                      ? "bg-accent text-[#182015]"
-                      : "bg-transparent text-white/72"
-                  }`}
-                >
-                  Select Preset
-                </button>
-                <button
-                  type="button"
-                  onClick={clearPresetSelection}
-                  className={`min-h-10 rounded-xl px-3 py-2 text-xs font-medium transition ${
-                    inputMode === "manual"
-                      ? "bg-accent text-[#182015]"
-                      : "bg-transparent text-white/72"
-                  }`}
-                >
-                  Custom
-                </button>
-              </div>
-              <input
-                inputMode="decimal"
-                type="number"
-                min="0.1"
-                step="0.1"
-                value={sizeInput}
-                readOnly={isTargetSizeLocked}
-                disabled={isTargetSizeLocked}
-                onChange={(event) => {
-                  onTargetSizeChange(event.target.value);
-                }}
-                placeholder={isTargetSizeLocked ? "Preset selected" : ""}
-                className={`min-h-10 w-full rounded-xl border px-3 py-2 text-base outline-none transition ${
-                  isTargetSizeLocked
-                    ? "cursor-not-allowed border-white/6 bg-white/6 text-white/45"
-                    : "border-white/10 bg-black/20 focus:border-emerald-300/60"
-                }`}
-              />
-            </div>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-white/82">Mil reading</span>
               <input
                 inputMode="decimal"
                 type="number"
@@ -278,7 +236,44 @@ export function HomePage({ initialInputs }: HomePageProps) {
                 onChange={(event) => {
                   setMilInput(event.target.value);
                 }}
-                placeholder=""
+                className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
+              />
+            </label>
+
+            <label className="block">
+              <div className="mb-2 space-y-2 sm:flex sm:items-center sm:justify-between sm:gap-3 sm:space-y-0">
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/58">
+                      Target Size
+                    </span>
+                    <span className="rounded-md bg-white/6 px-2 py-1 text-[11px] font-medium text-white/56">
+                      cm
+                    </span>
+                  </div>
+                  <span className="max-w-[52%] truncate text-right text-white/52 sm:max-w-none sm:text-left">
+                    Preset: <span className="font-medium text-white/72">{selectedPreset}</span>
+                  </span>
+                </div>
+                <div className="flex flex-col items-start gap-2 text-xs sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsPresetModalOpen(true)}
+                    className="min-h-10 w-full rounded-lg border border-white/12 bg-white/5 px-3 py-2 text-center font-medium text-white/80 transition active:bg-white/10 sm:min-h-0 sm:w-auto sm:py-1.5"
+                  >
+                    Choose preset
+                  </button>
+                </div>
+              </div>
+              <input
+                inputMode="decimal"
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={sizeInput}
+                onChange={(event) => {
+                  onTargetSizeChange(event.target.value);
+                }}
                 className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
               />
             </label>
@@ -298,12 +293,12 @@ export function HomePage({ initialInputs }: HomePageProps) {
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
               <button
                 type="button"
                 onClick={saveCurrentResult}
                 disabled={!hasValidResult || isEntryAlreadySaved}
-                className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                className={`min-h-11 rounded-xl px-3 py-2 text-sm font-medium transition sm:min-h-0 ${
                   hasValidResult && !isEntryAlreadySaved
                     ? "bg-accent text-[#182015]"
                     : "cursor-not-allowed bg-white/6 text-white/35"
@@ -314,32 +309,63 @@ export function HomePage({ initialInputs }: HomePageProps) {
               <button
                 type="button"
                 onClick={clearAll}
-                className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-sm font-medium text-white/80"
+                className="min-h-11 rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-sm font-medium text-white/80 sm:min-h-0"
               >
-                Clear All
+                Clear
               </button>
             </div>
           </div>
         </Card>
 
-        <Card title="Recent History" subtitle="Last 5 saved calculations are stored on this device.">
+        <Card title="Saved Calculations">
           <div className="space-y-2">
             {history.length > 0 ? (
               history.map((item) => (
-                <button
+                <div
                   key={`${item.createdAt}-${item.label}`}
-                  type="button"
-                  onClick={() => loadHistoryItem(item)}
-                  className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3 text-left transition active:bg-white/8"
+                  className="rounded-2xl border border-white/10 bg-black/18 p-2"
                 >
-                  <div>
-                    <p className="font-medium text-white">{item.label || "Custom"}</p>
-                    <p className="mt-1 text-sm text-white/60">
-                      {item.targetSizeCm} cm at {item.milReading} mil
-                    </p>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <button
+                      type="button"
+                      onClick={() => loadHistoryItem(item)}
+                      className="flex min-w-0 flex-1 items-start justify-between gap-3 rounded-xl px-2 py-2 text-left transition active:bg-white/8 sm:items-center"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-white">{item.label || "Custom"}</p>
+                        <p className="mt-1 text-sm text-white/60">
+                          {item.targetSizeCm} cm at {item.milReading} mil
+                        </p>
+                      </div>
+                      <p className="mono shrink-0 text-sm text-accent">
+                        {formatMeters(item.resultMeters, 1)}
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteHistoryItem(item)}
+                      className="self-end rounded-lg border border-white/12 bg-white/5 p-2 text-white/72 transition active:bg-white/10 sm:self-auto"
+                      aria-label={`Delete ${item.label || "Custom"} saved calculation`}
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M4 7h16" />
+                        <path d="M9 7V5h6v2" />
+                        <path d="M7 7l1 12h8l1-12" />
+                        <path d="M10 11v5" />
+                        <path d="M14 11v5" />
+                      </svg>
+                    </button>
                   </div>
-                  <p className="mono text-sm text-accent">{formatMeters(item.resultMeters, 1)}</p>
-                </button>
+                </div>
               ))
             ) : (
               <div className="rounded-2xl border border-dashed border-white/12 bg-black/14 p-4 text-sm text-white/58">
@@ -349,12 +375,6 @@ export function HomePage({ initialInputs }: HomePageProps) {
           </div>
         </Card>
 
-        <Link
-          href="/guide"
-          className="flex min-h-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 text-base font-semibold text-white"
-        >
-          Open Guide
-        </Link>
       </div>
 
       {isPresetModalOpen ? (
@@ -369,22 +389,37 @@ export function HomePage({ initialInputs }: HomePageProps) {
             className="field-card w-full max-w-xl overflow-hidden rounded-t-[1.8rem] sm:rounded-[2rem]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="max-h-[min(88dvh,44rem)] overflow-y-auto overscroll-contain px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 sm:max-h-[80vh] sm:px-5 sm:py-5">
-              <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/18 sm:hidden" />
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold tracking-wide">Choose Preset</h2>
-                  <p className="mt-1 text-sm leading-5 text-white/68">
-                    Select a target size preset to fill the form quickly.
-                  </p>
+            <div className="max-h-[min(88dvh,44rem)] overflow-y-auto overscroll-contain px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-0 sm:max-h-[80vh] sm:px-5 sm:py-0">
+              <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-white/8 bg-[var(--surface-strong)] px-4 pb-3 pt-3 sm:-mx-5 sm:px-5 sm:pb-4 sm:pt-4">
+                <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/18 sm:hidden" />
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-wide">Choose Preset</h2>
+                    <p className="mt-1 text-sm leading-5 text-white/68">
+                      Select a target size preset to fill the form quickly.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsPresetModalOpen(false)}
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/72 transition active:bg-white/10"
+                    aria-label="Close preset picker"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M6 6l12 12" />
+                      <path d="M18 6L6 18" />
+                    </svg>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsPresetModalOpen(false)}
-                  className="min-h-11 shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/72"
-                >
-                  Close
-                </button>
               </div>
 
               <div className="space-y-4">

@@ -32,32 +32,37 @@ export type HomePageInputs = {
   sizeInput: string;
 };
 
+export type QuickReferenceTab = {
+  id: string;
+  label: string;
+  rows: Array<{
+    label: string;
+    result: string;
+  }>;
+};
+
 export const presetGroups: PresetGroup[] = [
   {
     id: "birds",
     title: "Bird Body Size",
     presets: [
-      { label: "Zebra Dove", sizeCm: 21 },
-      { label: "Spotted Dove", sizeCm: 30 },
-      { label: "Quail", sizeCm: 18 },
-      { label: "Crow", sizeCm: 40 },
+      { label: "Small Bird", sizeCm: 15 },
+      { label: "Medium Bird", sizeCm: 20 },
+      { label: "Large Bird", sizeCm: 30 },
       { label: "Chicken", sizeCm: 35 },
-      { label: "Small Dove", sizeCm: 20 },
-      { label: "Medium Dove", sizeCm: 25 },
-      { label: "Large Dove", sizeCm: 30 },
+      { label: "Crow", sizeCm: 40 },
     ],
   },
   {
     id: "targets",
     title: "Target Practice",
     presets: [
-      { label: "5 cm target", sizeCm: 5 },
+      { label: "2 cm target", sizeCm: 2 },
+      { label: "4 cm target", sizeCm: 4 },
+      { label: "6 cm target", sizeCm: 6 },
+      { label: "8 cm target", sizeCm: 8 },
       { label: "10 cm target", sizeCm: 10 },
-      { label: "20 cm target", sizeCm: 20 },
-      { label: "25 cm target", sizeCm: 25 },
-      { label: "30 cm target", sizeCm: 30 },
-      { label: "35 cm target", sizeCm: 35 },
-      { label: "40 cm target", sizeCm: 40 },
+      { label: "12 cm target", sizeCm: 12 },
     ],
   },
 ];
@@ -70,13 +75,91 @@ export const guideExamples = [
   { label: "30 cm bird", sizeCm: 30, mil: 3, resultMeters: 100 },
 ];
 
-export const quickReferenceRows = [
-  { label: "5 cm at 1 mil", result: "50 m" },
-  { label: "5 cm at 2 mil", result: "25 m" },
-  { label: "6 cm at 1 mil", result: "60 m" },
-  { label: "10 cm at 1 mil", result: "100 m" },
-  { label: "10 cm at 2 mil", result: "50 m" },
-  { label: "20 cm at 4 mil", result: "50 m" },
+export const quickReferenceTabs: QuickReferenceTab[] = [
+  {
+    id: "size-4",
+    label: "4 cm",
+    rows: [
+      { label: "4 cm at 4 mil", result: "10 m" },
+      { label: "4 cm at 2.67 mil", result: "15 m" },
+      { label: "4 cm at 2 mil", result: "20 m" },
+      { label: "4 cm at 1.6 mil", result: "25 m" },
+      { label: "4 cm at 1.33 mil", result: "30 m" },
+      { label: "4 cm at 1.14 mil", result: "35 m" },
+      { label: "4 cm at 1 mil", result: "40 m" },
+      { label: "4 cm at 0.89 mil", result: "45 m" },
+      { label: "4 cm at 0.8 mil", result: "50 m" },
+    ],
+  },
+  {
+    id: "size-6",
+    label: "6 cm",
+    rows: [
+      { label: "6 cm at 6 mil", result: "10 m" },
+      { label: "6 cm at 4 mil", result: "15 m" },
+      { label: "6 cm at 3 mil", result: "20 m" },
+      { label: "6 cm at 2.4 mil", result: "25 m" },
+      { label: "6 cm at 2 mil", result: "30 m" },
+      { label: "6 cm at 1.71 mil", result: "35 m" },
+      { label: "6 cm at 1.5 mil", result: "40 m" },
+      { label: "6 cm at 1.33 mil", result: "45 m" },
+      { label: "6 cm at 1.2 mil", result: "50 m" },
+    ],
+  },
+  {
+    id: "size-8",
+    label: "8 cm",
+    rows: [
+      { label: "8 cm at 8 mil", result: "10 m" },
+      { label: "8 cm at 5.33 mil", result: "15 m" },
+      { label: "8 cm at 4 mil", result: "20 m" },
+      { label: "8 cm at 3.2 mil", result: "25 m" },
+      { label: "8 cm at 2.67 mil", result: "30 m" },
+      { label: "8 cm at 2.29 mil", result: "35 m" },
+      { label: "8 cm at 2 mil", result: "40 m" },
+      { label: "8 cm at 1.78 mil", result: "45 m" },
+      { label: "8 cm at 1.6 mil", result: "50 m" },
+    ],
+  },
+  {
+    id: "size-10",
+    label: "10 cm",
+    rows: [
+      { label: "10 cm at 10 mil", result: "10 m" },
+      { label: "10 cm at 6.67 mil", result: "15 m" },
+      { label: "10 cm at 5 mil", result: "20 m" },
+      { label: "10 cm at 4 mil", result: "25 m" },
+      { label: "10 cm at 3.33 mil", result: "30 m" },
+      { label: "10 cm at 2.86 mil", result: "35 m" },
+      { label: "10 cm at 2.5 mil", result: "40 m" },
+      { label: "10 cm at 2.22 mil", result: "45 m" },
+      { label: "10 cm at 2 mil", result: "50 m" },
+    ],
+  },
+  {
+    id: "size-20",
+    label: "20 cm",
+    rows: [
+      { label: "20 cm at 10 mil", result: "20 m" },
+      { label: "20 cm at 8 mil", result: "25 m" },
+      { label: "20 cm at 6.67 mil", result: "30 m" },
+      { label: "20 cm at 5.71 mil", result: "35 m" },
+      { label: "20 cm at 5 mil", result: "40 m" },
+      { label: "20 cm at 4.44 mil", result: "45 m" },
+      { label: "20 cm at 4 mil", result: "50 m" },
+    ],
+  },
+  {
+    id: "size-30",
+    label: "30 cm",
+    rows: [
+      { label: "30 cm at 10 mil", result: "30 m" },
+      { label: "30 cm at 8.57 mil", result: "35 m" },
+      { label: "30 cm at 7.5 mil", result: "40 m" },
+      { label: "30 cm at 6.67 mil", result: "45 m" },
+      { label: "30 cm at 6 mil", result: "50 m" },
+    ],
+  },
 ];
 
 const presetByLabel = new Map(
