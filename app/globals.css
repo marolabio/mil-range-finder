@@ -37,7 +37,6 @@ body {
   color: var(--foreground);
   font-family: "Segoe UI", "Arial Narrow", Arial, sans-serif;
   min-height: 100vh;
-  padding-bottom: 5.75rem;
   background-image:
     linear-gradient(rgba(149, 173, 132, 0.08) 1px, transparent 1px),
     linear-gradient(90deg, rgba(149, 173, 132, 0.08) 1px, transparent 1px),
@@ -62,9 +61,24 @@ input {
   padding: 0.875rem;
 }
 
+@media (min-width: 768px) {
+  .app-shell {
+    width: min(100%, 52rem);
+    padding: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell {
+    width: min(100%, 72rem);
+    padding: 1.5rem;
+  }
+}
+
 .field-card {
   background: linear-gradient(180deg, var(--surface-strong), var(--surface));
   border: 1px solid var(--border);
+  border-radius: 1.5rem;
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
 }
@@ -102,7 +116,7 @@ input {
   }
 
   .field-card {
-    border-radius: 1.4rem;
+    border-radius: 1.5rem;
     box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24);
   }
 }

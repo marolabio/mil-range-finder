@@ -10,7 +10,7 @@ type CardProps = {
 
 export function Card({ title, subtitle, children, action, className = "" }: CardProps) {
   return (
-    <section className={`field-card rounded-3xl p-4 sm:p-5 ${className}`}>
+    <section className={`field-card rounded-[1.5rem] p-4 sm:p-5 ${className}`}>
       {(title || subtitle || action) && (
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>

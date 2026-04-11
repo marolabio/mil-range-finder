@@ -18,6 +18,7 @@ export type PresetGroup = {
 
 export type HistoryItem = {
   label: string;
+  savedName?: string;
   targetSizeCm: number;
   milReading: number;
   resultMeters: number;

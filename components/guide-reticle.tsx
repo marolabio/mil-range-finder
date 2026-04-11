@@ -42,7 +42,7 @@ export function GuideReticle({ mode, onModeChange }: GuideReticleProps) {
         })}
       </div>
 
-      <div className="rounded-3xl border border-white/10 bg-black/24 p-3">
+      <div className="rounded-[1.5rem] border border-white/10 bg-black/24 p-3">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-label="MIL reticle demo scale">
           <line
             x1={padding}

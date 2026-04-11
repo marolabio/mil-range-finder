@@ -35,7 +35,7 @@ export function GuidePage() {
   }
 
   return (
-    <main className="flex-1 pt-1 pb-6 sm:pt-1 sm:pb-10">
+    <main className="flex-1 pt-0 pb-6 sm:pb-10">
       <div className="app-shell space-y-4 sm:space-y-5">
         <Card title="MIL Guide" subtitle="Read mils. Estimate distance.">
           <div className="rounded-2xl surface-soft p-4 text-sm leading-6 text-white/78">
