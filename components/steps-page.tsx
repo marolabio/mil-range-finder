@@ -213,18 +213,22 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
 
             <Card title="Quick Reads" subtitle="Based on your saved profile">
               <div className="space-y-2">
-                {[8, 16, 24, 32, 40, 48].map((sampleSteps) => (
+                <div className="flex items-center justify-between px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
+                  <span>Distance</span>
+                  <span>Estimated Steps</span>
+                </div>
+                {[5, 10, 15, 20, 25, 30].map((sampleMeters) => (
                   <div
-                    key={sampleSteps}
+                    key={sampleMeters}
                     className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3"
                   >
-                    <p className="text-sm text-white/76">{sampleSteps} steps</p>
+                    <p className="text-sm text-white/76">{sampleMeters} m</p>
                     <p className="mono text-sm text-accent">
-                      {formatExactMeters(
-                        calibrationSteps !== null && calibrationMeters !== null
-                          ? calculateDistanceFromSteps(sampleSteps, calibrationSteps, calibrationMeters) ?? 0
+                      {`${Math.round(
+                        calibrationMeters !== null && calibrationSteps !== null
+                          ? (sampleMeters / calibrationMeters) * calibrationSteps
                           : 0,
-                      )}
+                      )} steps`}
                     </p>
                   </div>
                 ))}
