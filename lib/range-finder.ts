@@ -2,8 +2,13 @@ export const HISTORY_LIMIT = 5;
 export const GUIDE_MODE_STORAGE_KEY = "mil-guide-helper-mode";
 export const HISTORY_STORAGE_KEY = "mil-range-history";
 export const LAST_PRESET_STORAGE_KEY = "mil-last-preset";
+export const STEP_CALIBRATION_STORAGE_KEY = "mil-step-calibration";
 export const DEFAULT_PRESET_LABEL = "4 cm target";
 export const DEFAULT_SIZE_INPUT = "4";
+export const DEFAULT_STEP_COUNT_INPUT = "";
+export const DEFAULT_CALIBRATION_STEPS_INPUT = "8";
+export const DEFAULT_CALIBRATION_METERS_INPUT = "5";
+export const DEFAULT_CALIBRATION_DISTANCE_UNIT = "m";
 
 export type Preset = {
   label: string;
@@ -31,6 +36,13 @@ export type HomePageInputs = {
   milInput: string;
   selectedPreset: string;
   sizeInput: string;
+};
+
+export type StepRangeInputs = {
+  stepsInput: string;
+  calibrationStepsInput: string;
+  calibrationMetersInput: string;
+  calibrationDistanceUnit: "m" | "cm" | "in";
 };
 
 export type QuickReferenceTab = {
@@ -222,6 +234,51 @@ export function formatExactMeters(value: number) {
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
   }).format(value)} m`;
+}
+
+export function getDefaultStepRangeInputs(): StepRangeInputs {
+  return {
+    stepsInput: DEFAULT_STEP_COUNT_INPUT,
+    calibrationStepsInput: DEFAULT_CALIBRATION_STEPS_INPUT,
+    calibrationMetersInput: DEFAULT_CALIBRATION_METERS_INPUT,
+    calibrationDistanceUnit: DEFAULT_CALIBRATION_DISTANCE_UNIT,
+  };
+}
+
+export function convertDistanceToMeters(value: number, unit: "m" | "cm" | "in") {
+  if (!Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  if (unit === "cm") {
+    return value / 100;
+  }
+
+  if (unit === "in") {
+    return value * 0.0254;
+  }
+
+  return value;
+}
+
+export function calculateDistanceFromSteps(
+  stepCount: number,
+  calibrationSteps: number,
+  calibrationMeters: number,
+) {
+  if (
+    !Number.isFinite(stepCount) ||
+    !Number.isFinite(calibrationSteps) ||
+    !Number.isFinite(calibrationMeters) ||
+    stepCount <= 0 ||
+    calibrationSteps <= 0 ||
+    calibrationMeters <= 0
+  ) {
+    return null;
+  }
+
+  const distance = (stepCount / calibrationSteps) * calibrationMeters;
+  return Number.isFinite(distance) ? distance : null;
 }
 
 export function readStoredJson<T>(key: string, fallback: T): T {

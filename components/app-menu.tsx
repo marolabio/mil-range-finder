@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 const menuItems = [
   { href: "/", label: "Calculator" },
+  { href: "/steps", label: "Step Range" },
   { href: "/guide", label: "Guide" },
 ];
 
