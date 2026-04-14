@@ -133,80 +133,79 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
   return (
     <main className="flex-1 pt-0 pb-6 sm:pb-10">
       <div className="app-shell space-y-4 sm:space-y-5">
-        <Card title="Step Range" subtitle="Estimate distance from your pace count.">
-          <div className="rounded-2xl surface-soft p-4 text-sm leading-6 text-white/78">
-            Your default profile is set to 8 steps = 5 meters. Update it anytime if your pace changes.
-          </div>
-        </Card>
-
         <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)] lg:gap-5 lg:space-y-0">
-          <Card title="Step Counter">
-            <div className="space-y-4">
-              <label className="block">
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/58">
-                    Steps Counted
-                  </span>
-                  <span className="rounded-md bg-white/6 px-2 py-1 text-[11px] font-medium text-white/56">
-                    steps
-                  </span>
-                </div>
-                <input
-                  inputMode="decimal"
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={stepsInput}
-                  onChange={(event) => setStepsInput(event.target.value)}
-                  className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
-                  placeholder="Example: 24"
-                />
-                {errors.stepsInput ? (
-                  <p className="mt-2 text-sm text-rose-300">{errors.stepsInput}</p>
-                ) : null}
-              </label>
-
-              <div className="rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/58">
-                      Calibration
-                    </p>
-                    <p className="mt-1 text-sm text-white/72">
-                      {calibrationStepsInput || "--"} steps = {calibrationMetersInput || "--"} {calibrationDistanceUnit}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsCalibrationModalOpen(true)}
-                    className="min-h-10 rounded-xl border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80"
-                  >
-                    Edit
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Card>
-
           <div className="space-y-4">
-            <Card title="Estimated Distance">
-              <div className="rounded-2xl bg-black/24 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-white/55">Range</p>
-                <p className="mt-2 text-4xl font-bold tracking-tight text-accent md:text-5xl">
-                  {hasValidResult && estimatedDistance !== null ? formatExactMeters(estimatedDistance) : "0 m"}
-                </p>
-              </div>
+            <Card
+              title="Step Counter"
+              subtitle="Count your pace and see the estimated distance together."
+            >
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.95fr)]">
+                <div className="space-y-4">
+                  <label className="block">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/58">
+                        Steps Counted
+                      </span>
+                      <span className="rounded-md bg-white/6 px-2 py-1 text-[11px] font-medium text-white/56">
+                        steps
+                      </span>
+                    </div>
+                    <input
+                      inputMode="decimal"
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={stepsInput}
+                      onChange={(event) => setStepsInput(event.target.value)}
+                      className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
+                      placeholder=""
+                    />
+                  </label>
 
-              <div className="mt-4 space-y-2 text-sm text-white/72">
-                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
-                  <span>Your pace</span>
-                  <span className="mono text-accent">
-                    {strideLength !== null ? `${strideLength.toFixed(2)} m/step` : "--"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
-                  <span>Formula</span>
-                  <span className="mono text-accent">steps / calib. steps x meters</span>
+                  <div className="rounded-2xl border border-white/10 bg-black/18 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/55">
+                      Estimated Distance
+                    </p>
+                    <p className="mt-2 text-4xl font-bold tracking-tight text-accent md:text-5xl">
+                      {hasValidResult && estimatedDistance !== null
+                        ? formatExactMeters(estimatedDistance)
+                        : "0 m"}
+                    </p>
+
+                    <div className="mt-4 space-y-2 text-sm text-white/72">
+                      <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
+                        <span>Your pace</span>
+                        <span className="mono text-accent">
+                          {strideLength !== null ? `${strideLength.toFixed(2)} m/step` : "--"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
+                        <span>Formula</span>
+                        <span className="mono text-accent">steps / calib. steps x meters</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/58">
+                          Calibration
+                        </p>
+                        <p className="mt-1 text-sm text-white/72">
+                          {calibrationStepsInput || "--"} steps = {calibrationMetersInput || "--"}{" "}
+                          {calibrationDistanceUnit}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsCalibrationModalOpen(true)}
+                        className="min-h-10 rounded-xl border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </Card>
@@ -302,9 +301,6 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
                     onChange={(event) => setCalibrationStepsInput(event.target.value)}
                     className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
                   />
-                  {errors.calibrationStepsInput ? (
-                    <p className="mt-2 text-sm text-rose-300">{errors.calibrationStepsInput}</p>
-                  ) : null}
                 </label>
 
                 <label className="block">
@@ -322,9 +318,6 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
                     onChange={(event) => setCalibrationMetersInput(event.target.value)}
                     className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
                   />
-                  {errors.calibrationMetersInput ? (
-                    <p className="mt-2 text-sm text-rose-300">{errors.calibrationMetersInput}</p>
-                  ) : null}
                 </label>
 
                 <div className="flex gap-2 rounded-2xl bg-black/18 p-2">

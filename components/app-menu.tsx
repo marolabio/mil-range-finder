@@ -23,7 +23,7 @@ export function AppMenu() {
               Range Tools
             </p>
             <p className="truncate text-sm font-semibold tracking-wide text-white sm:text-base">
-              MIL Range Finder
+              Range Finder
             </p>
           </div>
           <div className="relative">
