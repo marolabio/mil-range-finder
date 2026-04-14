@@ -173,26 +173,22 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
                     </p>
 
                     <div className="mt-4 space-y-2 text-sm text-white/72">
-                      <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
+                      <div className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-black/18 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <span>Your pace</span>
                         <span className="mono text-accent">
                           {strideLength !== null ? `${strideLength.toFixed(2)} m/step` : "--"}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
-                        <span>Formula</span>
-                        <span className="mono text-accent">steps / calib. steps x meters</span>
-                      </div>
                     </div>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/58">
                           Calibration
                         </p>
-                        <p className="mt-1 text-sm text-white/72">
+                        <p className="mt-1 break-words text-sm text-white/72">
                           {calibrationStepsInput || "--"} steps = {calibrationMetersInput || "--"}{" "}
                           {calibrationDistanceUnit}
                         </p>
@@ -200,7 +196,7 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
                       <button
                         type="button"
                         onClick={() => setIsCalibrationModalOpen(true)}
-                        className="min-h-10 rounded-xl border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80"
+                        className="min-h-10 w-full rounded-xl border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 sm:w-auto"
                       >
                         Edit
                       </button>
@@ -212,17 +208,25 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
 
             <Card title="Quick Reads" subtitle="Based on your saved profile">
               <div className="space-y-2">
-                <div className="flex items-center justify-between px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
+                <div className="hidden items-center justify-between px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50 sm:flex">
                   <span>Distance</span>
                   <span>Estimated Steps</span>
                 </div>
                 {[5, 10, 15, 20, 25, 30].map((sampleMeters) => (
                   <div
                     key={sampleMeters}
-                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3"
+                    className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-black/18 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <p className="text-sm text-white/76">{sampleMeters} m</p>
+                    <p className="text-sm text-white/76">
+                      <span className="mr-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50 sm:hidden">
+                        Distance
+                      </span>
+                      {sampleMeters} m
+                    </p>
                     <p className="mono text-sm text-accent">
+                      <span className="mr-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50 sm:hidden">
+                        Estimated
+                      </span>
                       {`${Math.round(
                         calibrationMeters !== null && calibrationSteps !== null
                           ? (sampleMeters / calibrationMeters) * calibrationSteps
@@ -320,7 +324,7 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
                   />
                 </label>
 
-                <div className="flex gap-2 rounded-2xl bg-black/18 p-2">
+                <div className="grid grid-cols-1 gap-2 rounded-2xl bg-black/18 p-2 sm:grid-cols-3">
                   {([
                     { label: "cm", value: "cm" },
                     { label: "Meters", value: "m" },
@@ -333,7 +337,7 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
                         key={unit.value}
                         type="button"
                         onClick={() => setCalibrationDistanceUnit(unit.value)}
-                        className={`flex-1 rounded-xl px-4 py-2 text-sm font-medium transition ${
+                        className={`w-full rounded-xl px-4 py-2 text-sm font-medium transition ${
                           isActive ? "bg-accent text-[#182015]" : "text-white/72"
                         }`}
                       >
@@ -343,18 +347,18 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
                   })}
                 </div>
 
-                <div className="flex justify-between gap-2">
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
                   <button
                     type="button"
                     onClick={resetToDefaultProfile}
-                    className="min-h-11 rounded-xl border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80"
+                    className="min-h-11 w-full rounded-xl border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 sm:w-auto"
                   >
                     Reset to 8 steps = 5 m
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsCalibrationModalOpen(false)}
-                    className="min-h-11 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-[#182015]"
+                    className="min-h-11 w-full rounded-xl bg-accent px-4 py-2 text-sm font-medium text-[#182015] sm:w-auto"
                   >
                     Save
                   </button>
