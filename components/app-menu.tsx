@@ -5,9 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const menuItems = [
-  { href: "/", label: "Calculator" },
+  { href: "/", label: "MIL Range" },
   { href: "/steps", label: "Step Range" },
-  { href: "/guide", label: "Guide" },
 ];
 
 export function AppMenu() {
@@ -17,20 +16,20 @@ export function AppMenu() {
   return (
     <header className="z-40 pt-[max(0.15rem,env(safe-area-inset-top))]">
       <div className="app-shell pb-0">
-        <div className="field-card flex items-center justify-between gap-3 rounded-[1.5rem] px-3 py-2 sm:px-4">
+        <div className="field-card flex items-center justify-between gap-3 px-3 py-2 sm:px-4">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/50">
               Range Tools
             </p>
-            <p className="truncate text-sm font-semibold tracking-wide text-white sm:text-base">
-              Range Finder
+            <p className="truncate text-sm font-semibold tracking-[0.02em] text-white/90 sm:text-base">
+              Slingshot Range Finder
             </p>
           </div>
           <div className="relative">
             <button
               type="button"
               onClick={() => setIsMenuOpen((open) => !open)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/80 transition active:bg-white/10"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/8 bg-white/[0.035] text-white/80 transition active:bg-white/[0.06]"
               aria-expanded={isMenuOpen}
               aria-haspopup="menu"
               aria-label="Open navigation menu"
@@ -53,7 +52,7 @@ export function AppMenu() {
 
             {isMenuOpen ? (
               <nav
-                className="absolute right-0 top-[calc(100%+0.5rem)] min-w-[11rem] rounded-2xl border border-white/10 bg-[var(--surface-strong)] p-2 shadow-[var(--shadow)]"
+                className="absolute right-0 top-[calc(100%+0.5rem)] min-w-[11rem] rounded-2xl border border-white/8 bg-[rgba(28,35,31,0.98)] p-1.5 shadow-[var(--shadow)]"
                 aria-label="Main menu"
               >
                 {menuItems.map((item) => {
@@ -65,7 +64,7 @@ export function AppMenu() {
                       href={item.href}
                       onClick={() => setIsMenuOpen(false)}
                       className={`flex min-h-10 items-center rounded-xl px-3 py-2 text-sm font-medium transition ${
-                        isActive ? "bg-accent text-[#182015]" : "text-white/74 active:bg-white/8"
+                        isActive ? "bg-accent text-[#182015]" : "text-white/76 active:bg-white/[0.06]"
                       }`}
                       aria-current={isActive ? "page" : undefined}
                     >

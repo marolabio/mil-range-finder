@@ -55,17 +55,7 @@ export type QuickReferenceTab = {
 };
 
 export const presetGroups: PresetGroup[] = [
-  {
-    id: "birds",
-    title: "Bird Body Size",
-    presets: [
-      { label: "Small Bird", sizeCm: 15 },
-      { label: "Medium Bird", sizeCm: 20 },
-      { label: "Large Bird", sizeCm: 30 },
-      { label: "Chicken", sizeCm: 35 },
-      { label: "Crow", sizeCm: 40 },
-    ],
-  },
+
   {
     id: "targets",
     title: "Target Practice",
@@ -76,6 +66,17 @@ export const presetGroups: PresetGroup[] = [
       { label: "8 cm target", sizeCm: 8 },
       { label: "10 cm target", sizeCm: 10 },
       { label: "12 cm target", sizeCm: 12 },
+    ],
+  },
+    {
+    id: "birds",
+    title: "Bird Body Size",
+    presets: [
+      { label: "Small Bird", sizeCm: 15 },
+      { label: "Medium Bird", sizeCm: 20 },
+      { label: "Large Bird", sizeCm: 30 },
+      { label: "Chicken", sizeCm: 35 },
+      { label: "Crow", sizeCm: 40 },
     ],
   },
 ];

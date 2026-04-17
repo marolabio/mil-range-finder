@@ -14,9 +14,9 @@ export function Card({ title, subtitle, children, action, className = "" }: Card
       {(title || subtitle || action) && (
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            {title ? <h2 className="text-lg font-semibold tracking-wide">{title}</h2> : null}
+            {title ? <h2 className="text-[1.05rem] font-semibold tracking-[0.01em] text-white/94">{title}</h2> : null}
             {subtitle ? (
-              <p className="mt-1 text-sm leading-5 text-white/68">{subtitle}</p>
+              <p className="mt-1 text-sm leading-5 ui-muted">{subtitle}</p>
             ) : null}
           </div>
           {action}

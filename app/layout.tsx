@@ -6,16 +6,16 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://mil-range-finder.local"),
   title: {
-    default: "MIL Range Finder",
-    template: "%s | MIL Range Finder",
+    default: "Slingshot Range Finder",
+    template: "%s | Slingshot Range Finder",
   },
   description: "Offline-capable MIL distance calculator for quick field target estimates.",
-  applicationName: "MIL Range Finder",
+  applicationName: "Slingshot Range Finder",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "MIL Range Finder",
+    title: "Slingshot Range Finder",
   },
   formatDetection: {
     telephone: false,

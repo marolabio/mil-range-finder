@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MIL Range Finder icon">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Slingshot Range Finder icon">
   <rect width="512" height="512" rx="104" fill="#111511"/>
   <rect x="40" y="40" width="432" height="432" rx="84" fill="#1b231b" stroke="#4f6b47" stroke-width="12"/>
   <path d="M256 88v336M88 256h336" stroke="#d3e395" stroke-width="22" stroke-linecap="round"/>

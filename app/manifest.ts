@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "MIL Range Finder",
-    short_name: "MIL Finder",
+    name: "Slingshot Range Finder",
+    short_name: "Slingshot",
     description: "Offline MIL distance calculator for field targets and practice presets.",
     start_url: "/",
     display: "standalone",

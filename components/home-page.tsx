@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { Card } from "@/components/card";
 import {
   calculateDistanceMeters,
@@ -245,18 +246,18 @@ export function HomePage({ initialInputs }: HomePageProps) {
   return (
     <main className="flex-1 pt-0 pb-3 sm:pb-10">
       <div className="app-shell space-y-3 sm:space-y-4">
-        <div className="space-y-3 lg:grid lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)] lg:items-start lg:gap-5 lg:space-y-0">
-          <Card>
-            <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(15rem,0.8fr)] lg:gap-5 lg:space-y-0">
+        <div className="space-y-3">
+          <Card title="MIL Range" subtitle="Enter target size and mil reading to estimate distance.">
+            <div className="space-y-4">
               <div className="space-y-4">
                 <label className="block">
-                  <div className="mb-2 space-y-2 md:flex md:items-center md:justify-between md:gap-3 md:space-y-0">
+                  <div className="mb-2 space-y-2 gap-2 md:space-y-0">
                     <div className="flex items-center justify-between gap-2 text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/58">
+                      <div className="flex items-center gap-2 space-y-2">
+                        <span className="ui-field-label text-xs font-semibold uppercase tracking-[0.18em]">
                           Target Size
                         </span>
-                        <span className="rounded-md bg-white/6 px-2 py-1 text-[11px] font-medium text-white/56">
+                        <span className="ui-chip">
                           cm
                         </span>
                       </div>
@@ -264,35 +265,37 @@ export function HomePage({ initialInputs }: HomePageProps) {
                         Preset: <span className="font-medium text-white/72">{selectedPreset}</span>
                       </span>
                     </div>
-                    <div className="flex flex-col items-start gap-2 text-xs md:flex-row md:items-center md:justify-end md:gap-3">
+                    <div className="flex gap-2 text-xs md:flex-row md:items-center md:justify-end md:gap-3">
+                      <input
+                        inputMode="decimal"
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        value={sizeInput}
+                        onChange={(event) => {
+                          onTargetSizeChange(event.target.value);
+                        }}
+                        className="ui-input min-w-0 flex-1 text-base"
+                      />
                       <button
                         type="button"
                         onClick={() => setIsPresetModalOpen(true)}
-                        className="min-h-10 w-full rounded-lg border border-white/12 bg-white/5 px-3 py-2 text-center font-medium text-white/80 transition active:bg-white/10 md:min-h-0 md:w-auto md:py-1.5"
+                        className="ui-button ui-button-secondary min-h-9 rounded-lg px-2.5 py-1.5 text-center text-xs md:min-h-0 md:w-auto"
                       >
-                        Choose preset
+                        Choose
                       </button>
+
                     </div>
                   </div>
-                  <input
-                    inputMode="decimal"
-                    type="number"
-                    min="0.1"
-                    step="0.1"
-                    value={sizeInput}
-                    onChange={(event) => {
-                      onTargetSizeChange(event.target.value);
-                    }}
-                    className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
-                  />
+
                 </label>
 
                 <label className="block">
                   <div className="mb-2 flex items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/58">
+                    <span className="ui-field-label text-xs font-semibold uppercase tracking-[0.18em]">
                       MIL Reading
                     </span>
-                    <span className="rounded-md bg-white/6 px-2 py-1 text-[11px] font-medium text-white/56">
+                    <span className="ui-chip">
                       mil
                     </span>
                   </div>
@@ -305,7 +308,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
                     onChange={(event) => {
                       setMilInput(event.target.value);
                     }}
-                    className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
+                    className="ui-input text-base"
                   />
                 </label>
               </div>
@@ -313,14 +316,14 @@ export function HomePage({ initialInputs }: HomePageProps) {
               <div className="space-y-4">
                 <div className="space-y-2">
                   {hasValidResult && distance !== null ? (
-                    <div className="rounded-2xl bg-black/24 p-4">
+                    <div className="ui-panel p-4">
                       <p className="text-xs uppercase tracking-[0.2em] text-white/55">Estimated distance</p>
                       <p className="mt-2 text-4xl font-bold tracking-tight text-accent md:text-5xl lg:text-4xl xl:text-5xl">
                         {formatMeters(distance, 1)}
                       </p>
                     </div>
                   ) : (
-                    <div className="rounded-2xl bg-black/24 p-4">
+                    <div className="ui-panel p-4">
                       <p className="text-xs uppercase tracking-[0.2em] text-white/55">Estimated distance</p>
                       <p className="mt-2 text-4xl font-bold tracking-tight text-white/35 md:text-5xl lg:text-4xl xl:text-5xl">
                         0 m
@@ -333,18 +336,17 @@ export function HomePage({ initialInputs }: HomePageProps) {
                     type="button"
                     onClick={openSaveModal}
                     disabled={!hasValidResult}
-                    className={`min-h-11 rounded-xl px-3 py-2 text-sm font-medium transition md:min-h-0 lg:flex-1 ${
-                      hasValidResult
-                        ? "bg-accent text-[#182015]"
-                        : "cursor-not-allowed bg-white/6 text-white/35"
-                    }`}
+                    className={`ui-button min-h-11 rounded-lg px-3 text-sm md:min-h-0 lg:flex-1 ${hasValidResult
+                      ? "bg-accent text-[#182015]"
+                      : "cursor-not-allowed bg-white/[0.04] text-white/35"
+                      }`}
                   >
                     Save
                   </button>
                   <button
                     type="button"
                     onClick={clearAll}
-                    className="min-h-11 rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-sm font-medium text-white/80 md:min-h-0 lg:flex-1"
+                    className="ui-button ui-button-secondary min-h-11 rounded-lg px-3 text-sm md:min-h-0 lg:flex-1"
                   >
                     Clear
                   </button>
@@ -359,9 +361,9 @@ export function HomePage({ initialInputs }: HomePageProps) {
                 history.map((item) => (
                   <div
                     key={`${item.createdAt}-${item.label}`}
-                    className="rounded-2xl border border-white/10 bg-black/18 p-2"
+                    className="ui-panel p-2"
                   >
-                    <div className="rounded-xl px-2 py-2">
+                    <div className="rounded-lg px-2 py-2">
                       <div className="flex items-start justify-between gap-3">
                         <p className="min-w-0 flex-1 truncate text-base font-semibold text-white">
                           {item.savedName || item.label || "Custom"}
@@ -369,7 +371,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
                         <button
                           type="button"
                           onClick={() => setPendingDeleteItem(item)}
-                          className="shrink-0 rounded-lg border border-white/12 bg-white/5 p-2 text-white/72 transition active:bg-white/10"
+                          className="shrink-0 rounded-lg border border-white/8 bg-white/[0.035] p-2 text-white/72 transition active:bg-white/[0.06]"
                           aria-label={`Delete ${item.label || "Custom"} saved calculation`}
                         >
                           <svg
@@ -407,12 +409,19 @@ export function HomePage({ initialInputs }: HomePageProps) {
                   </div>
                 ))
               ) : (
-                <div className="rounded-2xl border border-dashed border-white/12 bg-black/14 p-4 text-sm text-white/58">
+                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-white/58">
                   No saved calculation yet.
                 </div>
               )}
             </div>
           </Card>
+
+          <Link
+            href="/guide"
+            className="ui-button ui-button-secondary flex min-h-11 items-center justify-center rounded-[1.5rem] px-4 py-3 text-sm"
+          >
+            Open MIL guide
+          </Link>
         </div>
       </div>
 
@@ -477,11 +486,10 @@ export function HomePage({ initialInputs }: HomePageProps) {
                             key={preset.label}
                             type="button"
                             onClick={() => selectPreset(preset.label, preset.sizeCm)}
-                            className={`min-h-12 rounded-2xl border px-4 py-3 text-left text-sm transition sm:min-h-0 sm:rounded-full sm:px-3 sm:py-2 ${
-                              isSelected
-                                ? "border-transparent bg-accent text-[#182015]"
-                                : "border-white/10 bg-white/4 text-white/84 active:bg-white/10"
-                            }`}
+                            className={`min-h-12 rounded-2xl border px-4 py-3 text-left text-sm transition sm:min-h-0 sm:rounded-full sm:px-3 sm:py-2 ${isSelected
+                              ? "border-transparent bg-accent text-[#182015]"
+                              : "border-white/10 bg-white/4 text-white/84 active:bg-white/10"
+                              }`}
                           >
                             <span>{preset.label}</span>
                             <span className="ml-2 mono text-xs opacity-75">{preset.sizeCm} cm</span>
@@ -570,7 +578,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
                         setSaveNameError("");
                       }
                     }}
-                    className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
+                    className="min-h-10 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
                     placeholder="Enter a name"
                   />
                 </label>
@@ -586,13 +594,13 @@ export function HomePage({ initialInputs }: HomePageProps) {
                       setIsSaveModalOpen(false);
                       setSaveNameError("");
                     }}
-                    className="min-h-11 rounded-xl border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80"
+                    className="min-h-11 rounded-lg border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="min-h-11 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-[#182015]"
+                    className="min-h-11 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-[#182015]"
                   >
                     Save
                   </button>
@@ -662,14 +670,14 @@ export function HomePage({ initialInputs }: HomePageProps) {
                   <button
                     type="button"
                     onClick={() => setPendingDeleteItem(null)}
-                    className="min-h-11 rounded-xl border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80"
+                    className="min-h-11 rounded-lg border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={confirmDeleteHistoryItem}
-                    className="min-h-11 rounded-xl bg-[var(--danger)] px-4 py-2 text-sm font-medium text-[#201513]"
+                    className="min-h-11 rounded-lg bg-[var(--danger)] px-4 py-2 text-sm font-medium text-[#201513]"
                   >
                     Delete
                   </button>
