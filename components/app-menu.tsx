@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 const menuItems = [
   { href: "/", label: "MIL Range" },
   { href: "/steps", label: "Step Range" },
+  { href: "/slingshot-setup", label: "Slingshot Setup" },
 ];
 
 export function AppMenu() {

@@ -422,6 +422,12 @@ export function HomePage({ initialInputs }: HomePageProps) {
           >
             Open MIL guide
           </Link>
+          <Link
+            href="/slingshot-setup"
+            className="ui-button ui-button-secondary flex min-h-11 items-center justify-center rounded-[1.5rem] px-4 py-3 text-sm"
+          >
+            Open slingshot setup
+          </Link>
         </div>
       </div>
 

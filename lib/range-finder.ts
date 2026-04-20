@@ -9,6 +9,9 @@ export const DEFAULT_STEP_COUNT_INPUT = "";
 export const DEFAULT_CALIBRATION_STEPS_INPUT = "8";
 export const DEFAULT_CALIBRATION_METERS_INPUT = "5";
 export const DEFAULT_CALIBRATION_DISTANCE_UNIT = "m";
+export const DEFAULT_DRAW_LENGTH_INPUT = "70";
+export const DEFAULT_DRAW_LENGTH_UNIT = "cm";
+export const DEFAULT_BAND_PROFILE_ID = "flat-20-12-045";
 
 export type Preset = {
   label: string;
@@ -43,6 +46,27 @@ export type StepRangeInputs = {
   calibrationStepsInput: string;
   calibrationMetersInput: string;
   calibrationDistanceUnit: "m" | "cm" | "in";
+};
+
+export type DrawLengthUnit = "cm" | "in";
+
+export type BandProfile = {
+  id: string;
+  label: string;
+  bandSize: string;
+  latexThicknessMm: number;
+  taper: string;
+  stretchRatio: number;
+  recommendedAmmo: string;
+  backupAmmo: string;
+  feel: string;
+  note: string;
+};
+
+export type SlingshotSetupInputs = {
+  drawLengthInput: string;
+  drawLengthUnit: DrawLengthUnit;
+  selectedBandProfileId: string;
 };
 
 export type QuickReferenceTab = {
@@ -176,6 +200,69 @@ export const quickReferenceTabs: QuickReferenceTab[] = [
   },
 ];
 
+export const bandProfiles: BandProfile[] = [
+  {
+    id: "flat-18-12-040",
+    label: "Light Target",
+    bandSize: "18-12 mm",
+    latexThicknessMm: 0.4,
+    taper: "18 mm to 12 mm",
+    stretchRatio: 5.5,
+    recommendedAmmo: "7 mm steel or 8 mm clay",
+    backupAmmo: "6.35 mm steel",
+    feel: "Fast draw, light recoil",
+    note: "Good starting point for short sessions and lighter ammo.",
+  },
+  {
+    id: "flat-20-12-045",
+    label: "Balanced Setup",
+    bandSize: "20-12 mm",
+    latexThicknessMm: 0.45,
+    taper: "20 mm to 12 mm",
+    stretchRatio: 5.3,
+    recommendedAmmo: "8 mm steel",
+    backupAmmo: "9 mm clay",
+    feel: "Balanced speed and control",
+    note: "A versatile setup for general target use.",
+  },
+  {
+    id: "flat-22-12-050",
+    label: "Medium Power",
+    bandSize: "22-12 mm",
+    latexThicknessMm: 0.5,
+    taper: "22 mm to 12 mm",
+    stretchRatio: 5,
+    recommendedAmmo: "8.5 to 9 mm steel",
+    backupAmmo: "10 mm clay",
+    feel: "More punch with moderate snap",
+    note: "Useful when you want more carry without going overly heavy.",
+  },
+  {
+    id: "flat-22-12-060",
+    label: "Heavy Hunting",
+    bandSize: "22-12 mm",
+    latexThicknessMm: 0.6,
+    taper: "22 mm to 12 mm",
+    stretchRatio: 4.7,
+    recommendedAmmo: "9.5 to 10 mm steel",
+    backupAmmo: "11 mm clay",
+    feel: "Heavy pull, solid impact",
+    note: "Best with a strong draw and a slower, steadier release.",
+  },
+  {
+    id: "flat-25-15-070",
+    label: "Max Power",
+    bandSize: "25-15 mm",
+    latexThicknessMm: 0.7,
+    taper: "25 mm to 15 mm",
+    stretchRatio: 4.4,
+    recommendedAmmo: "10 to 11 mm steel",
+    backupAmmo: "12 mm clay",
+    feel: "Strong pull, high energy",
+    note: "Only makes sense if your form and fork can handle a heavy setup.",
+  },
+];
+
 const presetByLabel = new Map(
   presetGroups.flatMap((group) =>
     group.presets.map((preset) => [preset.label, preset.sizeCm] as const),
@@ -246,6 +333,14 @@ export function getDefaultStepRangeInputs(): StepRangeInputs {
   };
 }
 
+export function getDefaultSlingshotSetupInputs(): SlingshotSetupInputs {
+  return {
+    drawLengthInput: DEFAULT_DRAW_LENGTH_INPUT,
+    drawLengthUnit: DEFAULT_DRAW_LENGTH_UNIT,
+    selectedBandProfileId: DEFAULT_BAND_PROFILE_ID,
+  };
+}
+
 export function convertDistanceToMeters(value: number, unit: "m" | "cm" | "in") {
   if (!Number.isFinite(value) || value <= 0) {
     return null;
@@ -257,6 +352,18 @@ export function convertDistanceToMeters(value: number, unit: "m" | "cm" | "in") 
 
   if (unit === "in") {
     return value * 0.0254;
+  }
+
+  return value;
+}
+
+export function convertLengthToCentimeters(value: number, unit: DrawLengthUnit) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  if (unit === "in") {
+    return value * 2.54;
   }
 
   return value;
@@ -280,6 +387,24 @@ export function calculateDistanceFromSteps(
 
   const distance = (stepCount / calibrationSteps) * calibrationMeters;
   return Number.isFinite(distance) ? distance : null;
+}
+
+export function calculateActiveBandLengthCm(drawLengthCm: number, stretchRatio: number) {
+  if (
+    !Number.isFinite(drawLengthCm) ||
+    !Number.isFinite(stretchRatio) ||
+    drawLengthCm <= 0 ||
+    stretchRatio <= 0
+  ) {
+    return null;
+  }
+
+  const activeLength = drawLengthCm / stretchRatio;
+  return Number.isFinite(activeLength) ? activeLength : null;
+}
+
+export function formatInchesFromCentimeters(value: number) {
+  return `${(value / 2.54).toFixed(1)} in`;
 }
 
 export function readStoredJson<T>(key: string, fallback: T): T {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import { Card } from "@/components/card";
 import { GuideReticle } from "@/components/guide-reticle";
@@ -37,9 +38,22 @@ export function GuidePage() {
   return (
     <main className="flex-1 pt-0 pb-6 sm:pb-10">
       <div className="app-shell space-y-4 sm:space-y-5">
-        <Card title="MIL Guide" subtitle="Read mils. Estimate distance.">
-          <div className="rounded-2xl surface-soft p-4 text-sm leading-6 text-white/78">
-            Use the reticle, estimate target size, and plug the numbers into the calculator.
+        <Link
+          href="/"
+          className="ui-button ui-button-secondary inline-flex min-h-0 items-center gap-1.5 px-3 py-1.5 text-sm no-underline"
+        >
+          <span aria-hidden="true">&lt;</span>
+          <span>Back</span>
+        </Link>
+
+        <Card title="MIL Guide" subtitle="Read mils and estimate distance fast">
+          <div className="space-y-3 text-sm leading-6 text-white/78">
+            <p>Use the reticle to see how many mils the target covers.</p>
+            <p>Know the real target size in centimeters.</p>
+            <p>Put both into the formula to estimate distance.</p>
+            <div className="rounded-2xl border border-white/8 bg-black/24 p-4 mono text-sm text-accent">
+              Distance (m) = Size (cm) x 10 / mil
+            </div>
           </div>
         </Card>
 
@@ -78,17 +92,6 @@ export function GuidePage() {
                 <p className="mono text-sm text-accent">{row.result}</p>
               </div>
             ))}
-            </div>
-          </div>
-        </Card>
-
-        <Card title="Basics" subtitle="MIL ranging in short">
-          <div className="space-y-3 text-sm leading-6 text-white/78">
-            <p>1 mil is about 1 meter at 1000 meters.</p>
-            <p>Measure how many mils the target covers.</p>
-            <p>Use the known target size in centimeters.</p>
-            <div className="rounded-2xl border border-white/8 bg-black/24 p-4 mono text-sm text-accent">
-              Distance (m) = Size (cm) x 10 / mil
             </div>
           </div>
         </Card>
