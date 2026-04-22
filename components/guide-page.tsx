@@ -11,6 +11,12 @@ import {
   type HelperMode,
 } from "@/lib/range-finder";
 
+const milHelperDescriptions: Record<HelperMode, string> = {
+  "1.0": "Major lines only.",
+  "0.5": "Adds half-mil marks.",
+  "0.2": "Adds 0.2 mil marks.",
+};
+
 function subscribeToStorage(callback: () => void) {
   window.addEventListener("storage", callback);
   return () => {
@@ -58,7 +64,12 @@ export function GuidePage() {
         </Card>
 
         <Card title="Reticle Demo" subtitle="Standard 1 to 10 mil scale">
-          <GuideReticle mode={mode} onModeChange={handleModeChange} />
+          <GuideReticle
+            mode={mode}
+            onModeChange={handleModeChange}
+            unitLabel="mil"
+            helperDescriptions={milHelperDescriptions}
+          />
         </Card>
 
         <Card title="Quick Reference">

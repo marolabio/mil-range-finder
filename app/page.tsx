@@ -7,8 +7,8 @@ type PageProps = {
 };
 
 export const metadata: Metadata = {
-  title: "MIL Range",
-  description: "Estimate target distance using mil readings and known target size.",
+  title: "MIL / MOA Range",
+  description: "Estimate target distance in meters using MIL or MOA readings and a known target size.",
 };
 
 export default async function Page({ searchParams }: PageProps) {

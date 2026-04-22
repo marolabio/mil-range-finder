@@ -2,18 +2,25 @@
 
 import type { HelperMode } from "@/lib/range-finder";
 
-const helperDescriptions: Record<HelperMode, string> = {
-  "1.0": "Major lines only.",
-  "0.5": "Adds half-mil marks.",
-  "0.2": "Adds 0.2 mil marks.",
-};
-
 type GuideReticleProps = {
   mode: HelperMode;
   onModeChange: (mode: HelperMode) => void;
+  unitLabel?: string;
+  helperDescriptions?: Record<HelperMode, string>;
 };
 
-export function GuideReticle({ mode, onModeChange }: GuideReticleProps) {
+const defaultHelperDescriptions: Record<HelperMode, string> = {
+  "1.0": "Major lines only.",
+  "0.5": "Adds half-unit marks.",
+  "0.2": "Adds 0.2 unit marks.",
+};
+
+export function GuideReticle({
+  mode,
+  onModeChange,
+  unitLabel = "mil",
+  helperDescriptions = defaultHelperDescriptions,
+}: GuideReticleProps) {
   const subdivisions = mode === "1.0" ? 1 : mode === "0.5" ? 2 : 5;
   const width = 640;
   const height = 148;
@@ -36,14 +43,19 @@ export function GuideReticle({ mode, onModeChange }: GuideReticleProps) {
                 active ? "bg-accent text-[#182015]" : "bg-transparent text-white/72"
               }`}
             >
-              {option} mil view
+              {option} {unitLabel} view
             </button>
           );
         })}
       </div>
 
       <div className="rounded-[1.5rem] border border-white/10 bg-black/24 p-3">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-label="MIL reticle demo scale">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="w-full"
+          role="img"
+          aria-label={`${unitLabel.toUpperCase()} reticle demo scale`}
+        >
           <line
             x1={padding}
             y1={54}
@@ -111,7 +123,7 @@ export function GuideReticle({ mode, onModeChange }: GuideReticleProps) {
       </div>
 
       <div className="rounded-2xl surface-soft p-4 text-sm leading-6 text-white/78">
-        <p className="font-medium text-accent">Default: 1 major line = 1 mil</p>
+        <p className="font-medium text-accent">Default: 1 major line = 1 {unitLabel}</p>
         <p className="mt-1">{helperDescriptions[mode]}</p>
       </div>
     </div>

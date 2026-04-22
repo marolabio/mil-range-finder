@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Card } from "@/components/card";
 import {
   calculateDistanceMeters,
+  DEFAULT_ANGULAR_UNIT,
+  type AngularUnit,
   type HomePageInputs,
   formatMeters,
   HISTORY_LIMIT,
@@ -17,7 +19,7 @@ import {
 } from "@/lib/range-finder";
 
 type FieldErrors = {
-  mil?: string;
+  angularReading?: string;
   size?: string;
 };
 
@@ -46,15 +48,22 @@ function readStoredHistoryRaw() {
   return window.localStorage.getItem(HISTORY_STORAGE_KEY) ?? "[]";
 }
 
-function createErrors(milValue: string, sizeValue: string): FieldErrors {
-  const milNumber = Number(milValue);
+function normalizeHistoryItem(item: HistoryItem): HistoryItem {
+  return {
+    ...item,
+    angularUnit: item.angularUnit ?? DEFAULT_ANGULAR_UNIT,
+  };
+}
+
+function createErrors(angularReadingValue: string, sizeValue: string, angularUnit: AngularUnit): FieldErrors {
+  const angularReadingNumber = Number(angularReadingValue);
   const sizeNumber = Number(sizeValue);
   const errors: FieldErrors = {};
 
-  if (milValue.trim() === "") {
-    errors.mil = "Enter a mil reading greater than 0.";
-  } else if (!Number.isFinite(milNumber) || milNumber <= 0) {
-    errors.mil = "Mil reading must be a valid number above 0.";
+  if (angularReadingValue.trim() === "") {
+    errors.angularReading = `Enter a ${angularUnit.toUpperCase()} reading greater than 0.`;
+  } else if (!Number.isFinite(angularReadingNumber) || angularReadingNumber <= 0) {
+    errors.angularReading = `${angularUnit.toUpperCase()} reading must be a valid number above 0.`;
   }
 
   if (sizeValue.trim() === "") {
@@ -67,6 +76,7 @@ function createErrors(milValue: string, sizeValue: string): FieldErrors {
 }
 
 export function HomePage({ initialInputs }: HomePageProps) {
+  const [angularUnit, setAngularUnit] = useState<AngularUnit>(initialInputs.angularUnit);
   const [milInput, setMilInput] = useState(initialInputs.milInput);
   const [sizeInput, setSizeInput] = useState(initialInputs.sizeInput);
   const [selectedPreset, setSelectedPreset] = useState(initialInputs.selectedPreset);
@@ -81,18 +91,28 @@ export function HomePage({ initialInputs }: HomePageProps) {
   const storedHistory = useMemo(() => {
     try {
       const parsed = JSON.parse(storedHistoryRaw) as HistoryItem[];
-      return Array.isArray(parsed) ? parsed.slice(0, HISTORY_LIMIT) : [];
+      return Array.isArray(parsed)
+        ? parsed.map(normalizeHistoryItem).slice(0, HISTORY_LIMIT)
+        : [];
     } catch {
       return [];
     }
   }, [storedHistoryRaw]);
   const history = historyOverride ?? storedHistory;
 
-  const errors = useMemo(() => createErrors(milInput, sizeInput), [milInput, sizeInput]);
+  const errors = useMemo(
+    () => createErrors(milInput, sizeInput, angularUnit),
+    [angularUnit, milInput, sizeInput],
+  );
   const milNumber = parsePositiveNumber(milInput);
   const sizeNumber = parsePositiveNumber(sizeInput);
-  const distance = milNumber && sizeNumber ? calculateDistanceMeters(sizeNumber, milNumber) : null;
+  const distance =
+    milNumber && sizeNumber ? calculateDistanceMeters(sizeNumber, milNumber, angularUnit) : null;
   const hasValidResult = distance !== null && Object.keys(errors).length === 0;
+  const angularUnitLabel = angularUnit.toUpperCase();
+  const rangeTitle = `${angularUnitLabel} Range`;
+  const guideHref = angularUnit === "moa" ? "/moa-guide" : "/guide";
+  const guideLabel = `Open ${angularUnitLabel} guide`;
   useEffect(() => {
     if (!isPresetModalOpen && !isSaveModalOpen && !pendingDeleteItem) {
       return;
@@ -118,7 +138,9 @@ export function HomePage({ initialInputs }: HomePageProps) {
   }, [isPresetModalOpen, isSaveModalOpen, pendingDeleteItem]);
 
   useEffect(() => {
-    const storedHistory = readStoredJson<HistoryItem[]>(HISTORY_STORAGE_KEY, []);
+    const storedHistory = readStoredJson<HistoryItem[]>(HISTORY_STORAGE_KEY, []).map(
+      normalizeHistoryItem,
+    );
     if (storedHistory.length > HISTORY_LIMIT) {
       window.localStorage.setItem(
         HISTORY_STORAGE_KEY,
@@ -148,7 +170,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
       return;
     }
 
-    const saveKey = `${selectedPreset}|${trimmedSaveName}|${sizeNumber}|${milNumber}|${distance.toFixed(4)}`;
+    const saveKey = `${angularUnit}|${selectedPreset}|${trimmedSaveName}|${sizeNumber}|${milNumber}|${distance.toFixed(4)}`;
     if (saveKey === lastSavedKey) {
       setIsSaveModalOpen(false);
       return;
@@ -157,6 +179,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
     const isDuplicate = history.some(
       (entry) =>
         (entry.savedName ?? entry.label) === trimmedSaveName &&
+        entry.angularUnit === angularUnit &&
         entry.label === (selectedPreset || "Custom") &&
         entry.targetSizeCm === sizeNumber &&
         entry.milReading === milNumber,
@@ -167,6 +190,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
     }
 
     const item: HistoryItem = {
+      angularUnit,
       label: selectedPreset || "Custom",
       savedName: trimmedSaveName,
       targetSizeCm: sizeNumber,
@@ -182,6 +206,11 @@ export function HomePage({ initialInputs }: HomePageProps) {
     setIsSaveModalOpen(false);
     setSaveNameError("");
     window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+  }
+
+  function onAngularUnitChange(nextUnit: AngularUnit) {
+    setAngularUnit(nextUnit);
+    setLastSavedKey("");
   }
 
   function selectPreset(label: string, sizeCm: number) {
@@ -210,13 +239,15 @@ export function HomePage({ initialInputs }: HomePageProps) {
 
   function loadHistoryItem(item: HistoryItem) {
     const presetSizeFromLabel = presetByLabel.get(item.label);
-    const saveKey = `${item.label}|${item.targetSizeCm}|${item.milReading}|${item.resultMeters.toFixed(4)}`;
+    const normalizedItem = normalizeHistoryItem(item);
+    const saveKey = `${normalizedItem.angularUnit}|${normalizedItem.label}|${normalizedItem.targetSizeCm}|${normalizedItem.milReading}|${normalizedItem.resultMeters.toFixed(4)}`;
 
-    setMilInput(item.milReading.toString());
-    setSizeInput((presetSizeFromLabel ?? item.targetSizeCm).toString());
-    setSelectedPreset(item.label);
+    setAngularUnit(normalizedItem.angularUnit);
+    setMilInput(normalizedItem.milReading.toString());
+    setSizeInput((presetSizeFromLabel ?? normalizedItem.targetSizeCm).toString());
+    setSelectedPreset(normalizedItem.label);
     setLastSavedKey(saveKey);
-    window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify(item.label));
+    window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify(normalizedItem.label));
   }
 
   function deleteHistoryItem(itemToDelete: HistoryItem) {
@@ -247,7 +278,37 @@ export function HomePage({ initialInputs }: HomePageProps) {
     <main className="flex-1 pt-0 pb-3 sm:pb-10">
       <div className="app-shell space-y-3 sm:space-y-4">
         <div className="space-y-3">
-          <Card title="MIL Range" subtitle="Enter target size and mil reading to estimate distance.">
+          <div className="ui-panel space-y-2 p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="ui-field-label text-xs font-semibold uppercase tracking-[0.18em]">
+                Angular Unit
+              </span>
+              <span className="ui-chip">meters</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {(["mil", "moa"] as const).map((unit) => {
+                const isSelected = angularUnit === unit;
+
+                return (
+                  <button
+                    key={unit}
+                    type="button"
+                    onClick={() => onAngularUnitChange(unit)}
+                    className={`ui-button min-h-11 rounded-lg px-3 text-sm ${
+                      isSelected ? "bg-accent text-[#182015]" : "ui-button-secondary"
+                    }`}
+                  >
+                    {unit.toUpperCase()}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <Card
+            title={rangeTitle}
+            subtitle="Enter target size and an angular reading to estimate distance in meters."
+          >
             <div className="space-y-4">
               <div className="space-y-4">
                 <label className="block">
@@ -293,10 +354,10 @@ export function HomePage({ initialInputs }: HomePageProps) {
                 <label className="block">
                   <div className="mb-2 flex items-center gap-2">
                     <span className="ui-field-label text-xs font-semibold uppercase tracking-[0.18em]">
-                      MIL Reading
+                      {angularUnitLabel} Reading
                     </span>
                     <span className="ui-chip">
-                      mil
+                      {angularUnit}
                     </span>
                   </div>
                   <input
@@ -310,6 +371,9 @@ export function HomePage({ initialInputs }: HomePageProps) {
                     }}
                     className="ui-input text-base"
                   />
+                  {errors.angularReading ? (
+                    <p className="mt-2 text-sm text-rose-300">{errors.angularReading}</p>
+                  ) : null}
                 </label>
               </div>
 
@@ -399,7 +463,9 @@ export function HomePage({ initialInputs }: HomePageProps) {
                       >
                         <div className="min-w-0 flex-1 text-sm text-white/60">
                           <p>Target Size: {item.targetSizeCm} cm</p>
-                          <p className="mt-1">Mil: {item.milReading}</p>
+                          <p className="mt-1">
+                            {normalizeHistoryItem(item).angularUnit.toUpperCase()}: {item.milReading}
+                          </p>
                         </div>
                         <p className="mono shrink-0 text-sm text-accent">
                           {formatMeters(item.resultMeters, 1)}
@@ -417,10 +483,10 @@ export function HomePage({ initialInputs }: HomePageProps) {
           </Card>
 
           <Link
-            href="/guide"
+            href={guideHref}
             className="ui-button ui-button-secondary flex min-h-11 items-center justify-center rounded-[1.5rem] px-4 py-3 text-sm"
           >
-            Open MIL guide
+            {guideLabel}
           </Link>
           <Link
             href="/slingshot-setup"
@@ -669,7 +735,9 @@ export function HomePage({ initialInputs }: HomePageProps) {
               <div className="space-y-4 pb-4 sm:pb-5">
                 <div className="rounded-2xl border border-white/10 bg-black/18 p-4 text-sm text-white/70">
                   <p>Target Size: {pendingDeleteItem.targetSizeCm} cm</p>
-                  <p className="mt-1">Mil: {pendingDeleteItem.milReading}</p>
+                  <p className="mt-1">
+                    {normalizeHistoryItem(pendingDeleteItem).angularUnit.toUpperCase()}: {pendingDeleteItem.milReading}
+                  </p>
                 </div>
 
                 <div className="flex justify-end gap-2">

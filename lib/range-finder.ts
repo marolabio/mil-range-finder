@@ -5,6 +5,7 @@ export const LAST_PRESET_STORAGE_KEY = "mil-last-preset";
 export const STEP_CALIBRATION_STORAGE_KEY = "mil-step-calibration";
 export const DEFAULT_PRESET_LABEL = "4 cm target";
 export const DEFAULT_SIZE_INPUT = "4";
+export const DEFAULT_ANGULAR_UNIT = "mil";
 export const DEFAULT_STEP_COUNT_INPUT = "";
 export const DEFAULT_CALIBRATION_STEPS_INPUT = "8";
 export const DEFAULT_CALIBRATION_METERS_INPUT = "5";
@@ -25,6 +26,7 @@ export type PresetGroup = {
 };
 
 export type HistoryItem = {
+  angularUnit: AngularUnit;
   label: string;
   savedName?: string;
   targetSizeCm: number;
@@ -33,9 +35,12 @@ export type HistoryItem = {
   createdAt: string;
 };
 
+export type AngularUnit = "mil" | "moa";
+
 export type HelperMode = "1.0" | "0.5" | "0.2";
 
 export type HomePageInputs = {
+  angularUnit: AngularUnit;
   milInput: string;
   selectedPreset: string;
   sizeInput: string;
@@ -275,6 +280,7 @@ export function getHomePageInputs(
   const labelValue = searchParams.label;
   const milValue = searchParams.mil;
   const sizeValue = searchParams.size;
+  const unitValue = searchParams.unit;
   const selectedPreset =
     (Array.isArray(labelValue) ? labelValue[0] : labelValue) ?? DEFAULT_PRESET_LABEL;
   const presetSize = presetByLabel.get(selectedPreset);
@@ -283,20 +289,36 @@ export function getHomePageInputs(
     (Array.isArray(sizeValue) ? sizeValue[0] : sizeValue) ??
     presetSize?.toString() ??
     DEFAULT_SIZE_INPUT;
+  const angularUnitValue = Array.isArray(unitValue) ? unitValue[0] : unitValue;
+  const angularUnit = angularUnitValue === "moa" ? "moa" : DEFAULT_ANGULAR_UNIT;
 
   return {
+    angularUnit,
     milInput,
     selectedPreset,
     sizeInput,
   };
 }
 
-export function calculateDistanceMeters(sizeCm: number, milReading: number) {
-  if (!Number.isFinite(sizeCm) || !Number.isFinite(milReading) || sizeCm <= 0 || milReading <= 0) {
+export function calculateDistanceMeters(
+  sizeCm: number,
+  angularReading: number,
+  angularUnit: AngularUnit = DEFAULT_ANGULAR_UNIT,
+) {
+  if (
+    !Number.isFinite(sizeCm) ||
+    !Number.isFinite(angularReading) ||
+    sizeCm <= 0 ||
+    angularReading <= 0
+  ) {
     return null;
   }
 
-  const distance = (sizeCm * 10) / milReading;
+  const distance =
+    angularUnit === "moa"
+      ? sizeCm / (100 * Math.tan((angularReading * Math.PI) / 10800))
+      : (sizeCm * 10) / angularReading;
+
   return Number.isFinite(distance) ? distance : null;
 }
 
