@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/card";
-import { MOA_DISTANCE_FACTOR, moaQuickReferenceTabs } from "@/lib/range-finder";
+import {
+  MOA_DISTANCE_FACTOR_STORAGE_KEY,
+  getMoaQuickReferenceTabs,
+  readStoredMoaDistanceFactor,
+} from "@/lib/range-finder";
 
 export function MoaGuidePage() {
   const width = 640;
@@ -12,9 +16,28 @@ export function MoaGuidePage() {
   const scaleWidth = width - padding * 2;
   const segmentWidth = scaleWidth / 5;
   const oneMoaX = padding + segmentWidth / 10;
-  const [activeQuickReferenceTab, setActiveQuickReferenceTab] = useState(
-    moaQuickReferenceTabs[0]?.id ?? "",
+  const [moaDistanceFactor, setMoaDistanceFactor] = useState(() => readStoredMoaDistanceFactor());
+  const moaQuickReferenceTabs = useMemo(
+    () => getMoaQuickReferenceTabs(moaDistanceFactor),
+    [moaDistanceFactor],
   );
+  const [activeQuickReferenceTab, setActiveQuickReferenceTab] = useState(
+    () => getMoaQuickReferenceTabs(readStoredMoaDistanceFactor())[0]?.id ?? "",
+  );
+
+  useEffect(() => {
+    function onStorage(event: StorageEvent) {
+      if (event.key === null || event.key === MOA_DISTANCE_FACTOR_STORAGE_KEY) {
+        setMoaDistanceFactor(readStoredMoaDistanceFactor());
+      }
+    }
+
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
   const selectedQuickReferenceTab =
     moaQuickReferenceTabs.find((tab) => tab.id === activeQuickReferenceTab) ??
     moaQuickReferenceTabs[0];
@@ -144,14 +167,15 @@ export function MoaGuidePage() {
             </p>
             <p>
               This calculator is calibrated to your reticle test where a `10 cm` target at `10 m`
-              reads `8 MOA`. For quick mental math, use:
+              reads `{moaDistanceFactor} MOA`. For quick mental math, use:
             </p>
             <div className="rounded-2xl border border-white/8 bg-black/24 p-4 mono text-sm text-accent">
-              Distance (m) ~= Size (cm) x {MOA_DISTANCE_FACTOR} / MOA
+              Distance (m) ~= Size (cm) x {moaDistanceFactor} / MOA
             </div>
             <p>
               That makes the field formula match the homepage calculator exactly for your current
-              MOA reticle scale.
+              MOA reticle scale. Change it on the homepage and this guide will follow the same saved
+              setting.
             </p>
           </div>
         </Card>

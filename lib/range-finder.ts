@@ -2,7 +2,11 @@ export const HISTORY_LIMIT = 5;
 export const GUIDE_MODE_STORAGE_KEY = "mil-guide-helper-mode";
 export const HISTORY_STORAGE_KEY = "mil-range-history";
 export const LAST_PRESET_STORAGE_KEY = "mil-last-preset";
+export const LAST_TARGET_SIZE_STORAGE_KEY = "mil-last-target-size";
+export const LAST_ANGULAR_READING_STORAGE_KEY = "mil-last-angular-reading";
+export const LAST_STEP_COUNT_STORAGE_KEY = "mil-last-step-count";
 export const STEP_CALIBRATION_STORAGE_KEY = "mil-step-calibration";
+export const MOA_DISTANCE_FACTOR_STORAGE_KEY = "mil-moa-distance-factor";
 export const DEFAULT_PRESET_LABEL = "4 cm target";
 export const DEFAULT_SIZE_INPUT = "4";
 export const DEFAULT_ANGULAR_UNIT = "moa";
@@ -11,7 +15,7 @@ export const DEFAULT_STEP_COUNT_INPUT = "";
 export const DEFAULT_CALIBRATION_STEPS_INPUT = "8";
 export const DEFAULT_CALIBRATION_METERS_INPUT = "5";
 export const DEFAULT_CALIBRATION_DISTANCE_UNIT = "m";
-export const DEFAULT_DRAW_LENGTH_INPUT = "70";
+export const DEFAULT_DRAW_LENGTH_INPUT = "65";
 export const DEFAULT_DRAW_LENGTH_UNIT = "cm";
 export const DEFAULT_BAND_PROFILE_ID = "flat-20-12-045";
 
@@ -206,92 +210,96 @@ export const quickReferenceTabs: QuickReferenceTab[] = [
   },
 ];
 
-export const moaQuickReferenceTabs: QuickReferenceTab[] = [
+export function getMoaQuickReferenceTabs(
+  moaDistanceFactor: number = MOA_DISTANCE_FACTOR,
+): QuickReferenceTab[] {
+  return [
   {
     id: "size-4",
     label: "4 cm",
     rows: [
-      { label: "4 cm at 3.2 MOA", result: "10 m" },
-      { label: "4 cm at 2.13 MOA", result: "15 m" },
-      { label: "4 cm at 1.6 MOA", result: "20 m" },
-      { label: "4 cm at 1.28 MOA", result: "25 m" },
-      { label: "4 cm at 1.07 MOA", result: "30 m" },
-      { label: "4 cm at 0.91 MOA", result: "35 m" },
-      { label: "4 cm at 0.8 MOA", result: "40 m" },
-      { label: "4 cm at 0.71 MOA", result: "45 m" },
-      { label: "4 cm at 0.64 MOA", result: "50 m" },
+      { label: `4 cm at ${formatAngularReading((4 * moaDistanceFactor) / 10)} MOA`, result: "10 m" },
+      { label: `4 cm at ${formatAngularReading((4 * moaDistanceFactor) / 15)} MOA`, result: "15 m" },
+      { label: `4 cm at ${formatAngularReading((4 * moaDistanceFactor) / 20)} MOA`, result: "20 m" },
+      { label: `4 cm at ${formatAngularReading((4 * moaDistanceFactor) / 25)} MOA`, result: "25 m" },
+      { label: `4 cm at ${formatAngularReading((4 * moaDistanceFactor) / 30)} MOA`, result: "30 m" },
+      { label: `4 cm at ${formatAngularReading((4 * moaDistanceFactor) / 35)} MOA`, result: "35 m" },
+      { label: `4 cm at ${formatAngularReading((4 * moaDistanceFactor) / 40)} MOA`, result: "40 m" },
+      { label: `4 cm at ${formatAngularReading((4 * moaDistanceFactor) / 45)} MOA`, result: "45 m" },
+      { label: `4 cm at ${formatAngularReading((4 * moaDistanceFactor) / 50)} MOA`, result: "50 m" },
     ],
   },
   {
     id: "size-6",
     label: "6 cm",
     rows: [
-      { label: "6 cm at 4.8 MOA", result: "10 m" },
-      { label: "6 cm at 3.2 MOA", result: "15 m" },
-      { label: "6 cm at 2.4 MOA", result: "20 m" },
-      { label: "6 cm at 1.92 MOA", result: "25 m" },
-      { label: "6 cm at 1.6 MOA", result: "30 m" },
-      { label: "6 cm at 1.37 MOA", result: "35 m" },
-      { label: "6 cm at 1.2 MOA", result: "40 m" },
-      { label: "6 cm at 1.07 MOA", result: "45 m" },
-      { label: "6 cm at 0.96 MOA", result: "50 m" },
+      { label: `6 cm at ${formatAngularReading((6 * moaDistanceFactor) / 10)} MOA`, result: "10 m" },
+      { label: `6 cm at ${formatAngularReading((6 * moaDistanceFactor) / 15)} MOA`, result: "15 m" },
+      { label: `6 cm at ${formatAngularReading((6 * moaDistanceFactor) / 20)} MOA`, result: "20 m" },
+      { label: `6 cm at ${formatAngularReading((6 * moaDistanceFactor) / 25)} MOA`, result: "25 m" },
+      { label: `6 cm at ${formatAngularReading((6 * moaDistanceFactor) / 30)} MOA`, result: "30 m" },
+      { label: `6 cm at ${formatAngularReading((6 * moaDistanceFactor) / 35)} MOA`, result: "35 m" },
+      { label: `6 cm at ${formatAngularReading((6 * moaDistanceFactor) / 40)} MOA`, result: "40 m" },
+      { label: `6 cm at ${formatAngularReading((6 * moaDistanceFactor) / 45)} MOA`, result: "45 m" },
+      { label: `6 cm at ${formatAngularReading((6 * moaDistanceFactor) / 50)} MOA`, result: "50 m" },
     ],
   },
   {
     id: "size-8",
     label: "8 cm",
     rows: [
-      { label: "8 cm at 6.4 MOA", result: "10 m" },
-      { label: "8 cm at 4.27 MOA", result: "15 m" },
-      { label: "8 cm at 3.2 MOA", result: "20 m" },
-      { label: "8 cm at 2.56 MOA", result: "25 m" },
-      { label: "8 cm at 2.13 MOA", result: "30 m" },
-      { label: "8 cm at 1.83 MOA", result: "35 m" },
-      { label: "8 cm at 1.6 MOA", result: "40 m" },
-      { label: "8 cm at 1.42 MOA", result: "45 m" },
-      { label: "8 cm at 1.28 MOA", result: "50 m" },
+      { label: `8 cm at ${formatAngularReading((8 * moaDistanceFactor) / 10)} MOA`, result: "10 m" },
+      { label: `8 cm at ${formatAngularReading((8 * moaDistanceFactor) / 15)} MOA`, result: "15 m" },
+      { label: `8 cm at ${formatAngularReading((8 * moaDistanceFactor) / 20)} MOA`, result: "20 m" },
+      { label: `8 cm at ${formatAngularReading((8 * moaDistanceFactor) / 25)} MOA`, result: "25 m" },
+      { label: `8 cm at ${formatAngularReading((8 * moaDistanceFactor) / 30)} MOA`, result: "30 m" },
+      { label: `8 cm at ${formatAngularReading((8 * moaDistanceFactor) / 35)} MOA`, result: "35 m" },
+      { label: `8 cm at ${formatAngularReading((8 * moaDistanceFactor) / 40)} MOA`, result: "40 m" },
+      { label: `8 cm at ${formatAngularReading((8 * moaDistanceFactor) / 45)} MOA`, result: "45 m" },
+      { label: `8 cm at ${formatAngularReading((8 * moaDistanceFactor) / 50)} MOA`, result: "50 m" },
     ],
   },
   {
     id: "size-10",
     label: "10 cm",
     rows: [
-      { label: "10 cm at 8 MOA", result: "10 m" },
-      { label: "10 cm at 5.33 MOA", result: "15 m" },
-      { label: "10 cm at 4 MOA", result: "20 m" },
-      { label: "10 cm at 3.2 MOA", result: "25 m" },
-      { label: "10 cm at 2.67 MOA", result: "30 m" },
-      { label: "10 cm at 2.29 MOA", result: "35 m" },
-      { label: "10 cm at 2 MOA", result: "40 m" },
-      { label: "10 cm at 1.78 MOA", result: "45 m" },
-      { label: "10 cm at 1.6 MOA", result: "50 m" },
+      { label: `10 cm at ${formatAngularReading((10 * moaDistanceFactor) / 10)} MOA`, result: "10 m" },
+      { label: `10 cm at ${formatAngularReading((10 * moaDistanceFactor) / 15)} MOA`, result: "15 m" },
+      { label: `10 cm at ${formatAngularReading((10 * moaDistanceFactor) / 20)} MOA`, result: "20 m" },
+      { label: `10 cm at ${formatAngularReading((10 * moaDistanceFactor) / 25)} MOA`, result: "25 m" },
+      { label: `10 cm at ${formatAngularReading((10 * moaDistanceFactor) / 30)} MOA`, result: "30 m" },
+      { label: `10 cm at ${formatAngularReading((10 * moaDistanceFactor) / 35)} MOA`, result: "35 m" },
+      { label: `10 cm at ${formatAngularReading((10 * moaDistanceFactor) / 40)} MOA`, result: "40 m" },
+      { label: `10 cm at ${formatAngularReading((10 * moaDistanceFactor) / 45)} MOA`, result: "45 m" },
+      { label: `10 cm at ${formatAngularReading((10 * moaDistanceFactor) / 50)} MOA`, result: "50 m" },
     ],
   },
   {
     id: "size-20",
     label: "20 cm",
     rows: [
-      { label: "20 cm at 8 MOA", result: "20 m" },
-      { label: "20 cm at 6.4 MOA", result: "25 m" },
-      { label: "20 cm at 5.33 MOA", result: "30 m" },
-      { label: "20 cm at 4.57 MOA", result: "35 m" },
-      { label: "20 cm at 4 MOA", result: "40 m" },
-      { label: "20 cm at 3.56 MOA", result: "45 m" },
-      { label: "20 cm at 3.2 MOA", result: "50 m" },
+      { label: `20 cm at ${formatAngularReading((20 * moaDistanceFactor) / 20)} MOA`, result: "20 m" },
+      { label: `20 cm at ${formatAngularReading((20 * moaDistanceFactor) / 25)} MOA`, result: "25 m" },
+      { label: `20 cm at ${formatAngularReading((20 * moaDistanceFactor) / 30)} MOA`, result: "30 m" },
+      { label: `20 cm at ${formatAngularReading((20 * moaDistanceFactor) / 35)} MOA`, result: "35 m" },
+      { label: `20 cm at ${formatAngularReading((20 * moaDistanceFactor) / 40)} MOA`, result: "40 m" },
+      { label: `20 cm at ${formatAngularReading((20 * moaDistanceFactor) / 45)} MOA`, result: "45 m" },
+      { label: `20 cm at ${formatAngularReading((20 * moaDistanceFactor) / 50)} MOA`, result: "50 m" },
     ],
   },
   {
     id: "size-30",
     label: "30 cm",
     rows: [
-      { label: "30 cm at 8 MOA", result: "30 m" },
-      { label: "30 cm at 6.86 MOA", result: "35 m" },
-      { label: "30 cm at 6 MOA", result: "40 m" },
-      { label: "30 cm at 5.33 MOA", result: "45 m" },
-      { label: "30 cm at 4.8 MOA", result: "50 m" },
+      { label: `30 cm at ${formatAngularReading((30 * moaDistanceFactor) / 30)} MOA`, result: "30 m" },
+      { label: `30 cm at ${formatAngularReading((30 * moaDistanceFactor) / 35)} MOA`, result: "35 m" },
+      { label: `30 cm at ${formatAngularReading((30 * moaDistanceFactor) / 40)} MOA`, result: "40 m" },
+      { label: `30 cm at ${formatAngularReading((30 * moaDistanceFactor) / 45)} MOA`, result: "45 m" },
+      { label: `30 cm at ${formatAngularReading((30 * moaDistanceFactor) / 50)} MOA`, result: "50 m" },
     ],
   },
-];
+  ];
+}
 
 export const bandProfiles: BandProfile[] = [
   {
@@ -395,6 +403,7 @@ export function calculateDistanceMeters(
   sizeCm: number,
   angularReading: number,
   angularUnit: AngularUnit = DEFAULT_ANGULAR_UNIT,
+  moaDistanceFactor: number = MOA_DISTANCE_FACTOR,
 ) {
   if (
     !Number.isFinite(sizeCm) ||
@@ -407,7 +416,7 @@ export function calculateDistanceMeters(
 
   const distance =
     angularUnit === "moa"
-      ? (sizeCm * MOA_DISTANCE_FACTOR) / angularReading
+      ? (sizeCm * moaDistanceFactor) / angularReading
       : (sizeCm * 10) / angularReading;
 
   return Number.isFinite(distance) ? distance : null;
@@ -531,4 +540,41 @@ export function readStoredJson<T>(key: string, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+export function readStoredMoaDistanceFactor() {
+  const storedValue = readStoredJson<number | string | null>(MOA_DISTANCE_FACTOR_STORAGE_KEY, null);
+  const parsed =
+    typeof storedValue === "number"
+      ? storedValue
+      : typeof storedValue === "string"
+        ? Number(storedValue)
+        : null;
+
+  if (!parsed || !Number.isFinite(parsed) || parsed <= 0) {
+    return MOA_DISTANCE_FACTOR;
+  }
+
+  return parsed;
+}
+
+export function readStoredMoaDistanceFactorInput() {
+  const storedValue = readStoredJson<number | string | null>(MOA_DISTANCE_FACTOR_STORAGE_KEY, null);
+
+  if (typeof storedValue === "string") {
+    return storedValue;
+  }
+
+  if (typeof storedValue === "number" && Number.isFinite(storedValue) && storedValue > 0) {
+    return storedValue.toString();
+  }
+
+  return MOA_DISTANCE_FACTOR.toString();
+}
+
+function formatAngularReading(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+  }).format(value);
 }

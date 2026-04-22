@@ -7,6 +7,7 @@ import {
   convertDistanceToMeters,
   formatExactMeters,
   getDefaultStepRangeInputs,
+  LAST_STEP_COUNT_STORAGE_KEY,
   parsePositiveNumber,
   readStoredJson,
   STEP_CALIBRATION_STORAGE_KEY,
@@ -62,7 +63,9 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
     StepRangeInputs,
     "calibrationDistanceUnit" | "calibrationMetersInput" | "calibrationStepsInput"
   > | null>(STEP_CALIBRATION_STORAGE_KEY, null);
-  const [stepsInput, setStepsInput] = useState(initialInputs.stepsInput);
+  const [stepsInput, setStepsInput] = useState(
+    () => readStoredJson<string | null>(LAST_STEP_COUNT_STORAGE_KEY, null) ?? initialInputs.stepsInput,
+  );
   const [calibrationStepsInput, setCalibrationStepsInput] = useState(
     storedCalibration?.calibrationStepsInput ?? initialInputs.calibrationStepsInput,
   );
@@ -106,6 +109,10 @@ export function StepsPage({ initialInputs }: StepsPageProps) {
       }),
     );
   }, [calibrationDistanceUnit, calibrationMetersInput, calibrationStepsInput]);
+
+  useEffect(() => {
+    window.localStorage.setItem(LAST_STEP_COUNT_STORAGE_KEY, JSON.stringify(stepsInput));
+  }, [stepsInput]);
 
   useEffect(() => {
     if (!isCalibrationModalOpen) {

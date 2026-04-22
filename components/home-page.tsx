@@ -11,10 +11,15 @@ import {
   formatMeters,
   HISTORY_LIMIT,
   HISTORY_STORAGE_KEY,
+  LAST_ANGULAR_READING_STORAGE_KEY,
   LAST_PRESET_STORAGE_KEY,
+  LAST_TARGET_SIZE_STORAGE_KEY,
+  MOA_DISTANCE_FACTOR,
+  MOA_DISTANCE_FACTOR_STORAGE_KEY,
   parsePositiveNumber,
   presetGroups,
   readStoredJson,
+  readStoredMoaDistanceFactorInput,
   type HistoryItem,
 } from "@/lib/range-finder";
 
@@ -77,17 +82,27 @@ function createErrors(angularReadingValue: string, sizeValue: string, angularUni
 
 export function HomePage({ initialInputs }: HomePageProps) {
   const [angularUnit, setAngularUnit] = useState<AngularUnit>(initialInputs.angularUnit);
-  const [milInput, setMilInput] = useState(initialInputs.milInput);
-  const [sizeInput, setSizeInput] = useState(initialInputs.sizeInput);
-  const [selectedPreset, setSelectedPreset] = useState(initialInputs.selectedPreset);
+  const [milInput, setMilInput] = useState(() =>
+    readStoredJson<string | null>(LAST_ANGULAR_READING_STORAGE_KEY, null) ?? initialInputs.milInput,
+  );
+  const [sizeInput, setSizeInput] = useState(() =>
+    readStoredJson<string | null>(LAST_TARGET_SIZE_STORAGE_KEY, null) ?? initialInputs.sizeInput,
+  );
+  const [selectedPreset, setSelectedPreset] = useState(() =>
+    readStoredJson<string | null>(LAST_PRESET_STORAGE_KEY, null) ?? initialInputs.selectedPreset,
+  );
   const storedHistoryRaw = useSyncExternalStore(subscribeToStorage, readStoredHistoryRaw, () => "[]");
   const [historyOverride, setHistoryOverride] = useState<HistoryItem[] | null>(null);
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isMoaSettingsModalOpen, setIsMoaSettingsModalOpen] = useState(false);
   const [pendingDeleteItem, setPendingDeleteItem] = useState<HistoryItem | null>(null);
   const [saveNameInput, setSaveNameInput] = useState("");
   const [saveNameError, setSaveNameError] = useState("");
   const [lastSavedKey, setLastSavedKey] = useState("");
+  const [moaDistanceFactorInput, setMoaDistanceFactorInput] = useState(() =>
+    readStoredMoaDistanceFactorInput(),
+  );
   const storedHistory = useMemo(() => {
     try {
       const parsed = JSON.parse(storedHistoryRaw) as HistoryItem[];
@@ -106,15 +121,18 @@ export function HomePage({ initialInputs }: HomePageProps) {
   );
   const milNumber = parsePositiveNumber(milInput);
   const sizeNumber = parsePositiveNumber(sizeInput);
+  const moaDistanceFactor = parsePositiveNumber(moaDistanceFactorInput) ?? MOA_DISTANCE_FACTOR;
   const distance =
-    milNumber && sizeNumber ? calculateDistanceMeters(sizeNumber, milNumber, angularUnit) : null;
+    milNumber && sizeNumber
+      ? calculateDistanceMeters(sizeNumber, milNumber, angularUnit, moaDistanceFactor)
+      : null;
   const hasValidResult = distance !== null && Object.keys(errors).length === 0;
   const angularUnitLabel = angularUnit.toUpperCase();
   const rangeTitle = `${angularUnitLabel} Range`;
   const guideHref = angularUnit === "moa" ? "/moa-guide" : "/guide";
   const guideLabel = `Open ${angularUnitLabel} guide`;
   useEffect(() => {
-    if (!isPresetModalOpen && !isSaveModalOpen && !pendingDeleteItem) {
+    if (!isPresetModalOpen && !isSaveModalOpen && !isMoaSettingsModalOpen && !pendingDeleteItem) {
       return;
     }
 
@@ -122,6 +140,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
       if (event.key === "Escape") {
         setIsPresetModalOpen(false);
         setIsSaveModalOpen(false);
+        setIsMoaSettingsModalOpen(false);
         setPendingDeleteItem(null);
         setSaveNameError("");
       }
@@ -135,7 +154,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
       window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [isPresetModalOpen, isSaveModalOpen, pendingDeleteItem]);
+  }, [isPresetModalOpen, isSaveModalOpen, isMoaSettingsModalOpen, pendingDeleteItem]);
 
   useEffect(() => {
     const storedHistory = readStoredJson<HistoryItem[]>(HISTORY_STORAGE_KEY, []).map(
@@ -148,6 +167,25 @@ export function HomePage({ initialInputs }: HomePageProps) {
       );
     }
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      MOA_DISTANCE_FACTOR_STORAGE_KEY,
+      JSON.stringify(moaDistanceFactorInput),
+    );
+  }, [moaDistanceFactorInput]);
+
+  useEffect(() => {
+    window.localStorage.setItem(LAST_TARGET_SIZE_STORAGE_KEY, JSON.stringify(sizeInput));
+  }, [sizeInput]);
+
+  useEffect(() => {
+    window.localStorage.setItem(LAST_ANGULAR_READING_STORAGE_KEY, JSON.stringify(milInput));
+  }, [milInput]);
+
+  useEffect(() => {
+    window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify(selectedPreset));
+  }, [selectedPreset]);
 
   function openSaveModal() {
     if (!hasValidResult || milNumber === null || sizeNumber === null || distance === null) {
@@ -216,7 +254,6 @@ export function HomePage({ initialInputs }: HomePageProps) {
   function selectPreset(label: string, sizeCm: number) {
     setSelectedPreset(label);
     setSizeInput(sizeCm.toString());
-    window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify(label));
     setIsPresetModalOpen(false);
   }
 
@@ -224,7 +261,6 @@ export function HomePage({ initialInputs }: HomePageProps) {
     setSizeInput(value);
     if (selectedPreset !== "Custom") {
       setSelectedPreset("Custom");
-      window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify("Custom"));
     }
   }
 
@@ -234,7 +270,10 @@ export function HomePage({ initialInputs }: HomePageProps) {
     setSelectedPreset("Custom");
     setLastSavedKey("");
     setSaveNameError("");
-    window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify("Custom"));
+  }
+
+  function resetMoaCalibration() {
+    setMoaDistanceFactorInput(MOA_DISTANCE_FACTOR.toString());
   }
 
   function loadHistoryItem(item: HistoryItem) {
@@ -247,7 +286,6 @@ export function HomePage({ initialInputs }: HomePageProps) {
     setSizeInput((presetSizeFromLabel ?? normalizedItem.targetSizeCm).toString());
     setSelectedPreset(normalizedItem.label);
     setLastSavedKey(saveKey);
-    window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify(normalizedItem.label));
   }
 
   function deleteHistoryItem(itemToDelete: HistoryItem) {
@@ -352,25 +390,43 @@ export function HomePage({ initialInputs }: HomePageProps) {
                 </label>
 
                 <label className="block">
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className="ui-field-label text-xs font-semibold uppercase tracking-[0.18em]">
-                      {angularUnitLabel} Reading
-                    </span>
-                    <span className="ui-chip">
-                      {angularUnit}
-                    </span>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="ui-field-label text-xs font-semibold uppercase tracking-[0.18em]">
+                        {angularUnitLabel} Reading
+                      </span>
+                      <span className="ui-chip">
+                        {angularUnit}
+                      </span>
+                    </div>
+                    {angularUnit === "moa" ? (
+                      <span className="text-right text-[11px] text-white/52">
+                        1 MOA = <span className="mono text-white/72">{moaDistanceFactor}</span>
+                      </span>
+                    ) : null}
                   </div>
-                  <input
-                    inputMode="decimal"
-                    type="number"
-                    min="0.1"
-                    step="0.1"
-                    value={milInput}
-                    onChange={(event) => {
-                      setMilInput(event.target.value);
-                    }}
-                    className="ui-input text-base"
-                  />
+                  <div className="flex gap-2 text-xs md:flex-row md:items-center md:justify-end md:gap-3">
+                    <input
+                      inputMode="decimal"
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={milInput}
+                      onChange={(event) => {
+                        setMilInput(event.target.value);
+                      }}
+                      className="ui-input min-w-0 flex-1 text-base"
+                    />
+                    {angularUnit === "moa" ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsMoaSettingsModalOpen(true)}
+                        className="ui-button ui-button-secondary min-h-9 rounded-lg px-2.5 py-1.5 text-center text-xs md:min-h-0 md:w-auto"
+                      >
+                        Settings
+                      </button>
+                    ) : null}
+                  </div>
                   {errors.angularReading ? (
                     <p className="mt-2 text-sm text-rose-300">{errors.angularReading}</p>
                   ) : null}
@@ -678,6 +734,102 @@ export function HomePage({ initialInputs }: HomePageProps) {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isMoaSettingsModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end bg-black/70 p-2 sm:items-center sm:justify-center sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="MOA settings"
+          onClick={() => setIsMoaSettingsModalOpen(false)}
+        >
+          <div
+            className="field-card w-full max-w-md overflow-hidden rounded-[1.5rem]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-0 sm:px-5 sm:py-0">
+              <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-white/8 bg-[var(--surface-strong)] px-4 pb-3 pt-3 sm:-mx-5 sm:px-5 sm:pb-4 sm:pt-4">
+                <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/18 sm:hidden" />
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-wide">MOA Settings</h2>
+                    <p className="mt-1 text-sm leading-5 text-white/68">
+                      Saved in local storage and shared with the MOA guide.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsMoaSettingsModalOpen(false)}
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/72 transition active:bg-white/10"
+                    aria-label="Close MOA settings"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M6 6l12 12" />
+                      <path d="M18 6L6 18" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4 pb-4 sm:pb-5">
+                <label className="block">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="ui-field-label text-xs font-semibold uppercase tracking-[0.18em]">
+                      1 MOA Equivalent
+                    </span>
+                    <span className="ui-chip">factor</span>
+                  </div>
+                  <input
+                    autoFocus
+                    inputMode="decimal"
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={moaDistanceFactorInput}
+                    onChange={(event) => setMoaDistanceFactorInput(event.target.value)}
+                    className="ui-input text-base"
+                  />
+                </label>
+
+                <div className="rounded-2xl border border-white/10 bg-black/18 px-4 py-3 text-sm text-white/74">
+                  <p className="font-medium text-accent">
+                    Distance (m) = Size (cm) x {moaDistanceFactor} / MOA
+                  </p>
+                  <p className="mt-1">
+                    Example: if a `10 cm` target at `10 m` reads `8 MOA`, set this to `8`.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={resetMoaCalibration}
+                    className="ui-button ui-button-secondary min-h-11 rounded-lg px-3 text-sm"
+                  >
+                    Reset to {MOA_DISTANCE_FACTOR}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMoaSettingsModalOpen(false)}
+                    className="ui-button min-h-11 rounded-lg px-3 text-sm bg-accent text-[#182015]"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
