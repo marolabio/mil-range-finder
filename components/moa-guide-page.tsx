@@ -1,15 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Card } from "@/components/card";
-
-const moaExamples = [
-  { label: "4 cm spinner at 13.75 MOA", result: "10.0 m" },
-  { label: "4 cm spinner at 6.88 MOA", result: "20.0 m" },
-  { label: "6 cm can at 6.88 MOA", result: "30.0 m" },
-  { label: "8 cm plate at 5.50 MOA", result: "40.0 m" },
-  { label: "10 cm plate at 6.88 MOA", result: "50.0 m" },
-];
+import { MOA_DISTANCE_FACTOR, moaQuickReferenceTabs } from "@/lib/range-finder";
 
 export function MoaGuidePage() {
   const width = 640;
@@ -18,6 +12,12 @@ export function MoaGuidePage() {
   const scaleWidth = width - padding * 2;
   const segmentWidth = scaleWidth / 5;
   const oneMoaX = padding + segmentWidth / 10;
+  const [activeQuickReferenceTab, setActiveQuickReferenceTab] = useState(
+    moaQuickReferenceTabs[0]?.id ?? "",
+  );
+  const selectedQuickReferenceTab =
+    moaQuickReferenceTabs.find((tab) => tab.id === activeQuickReferenceTab) ??
+    moaQuickReferenceTabs[0];
 
   return (
     <main className="flex-1 pt-0 pb-6 sm:pb-10">
@@ -139,30 +139,55 @@ export function MoaGuidePage() {
 
         <Card title="Quick Method" subtitle="Fast field estimate">
           <div className="space-y-3 text-sm leading-6 text-white/78">
+            <p className="font-medium text-amber-200">
+              Custom calibration: this MOA scale is tuned to your reticle, not standard true-angle MOA.
+            </p>
             <p>
-              For quick mental math, you can use this close approximation:
+              This calculator is calibrated to your reticle test where a `10 cm` target at `10 m`
+              reads `8 MOA`. For quick mental math, use:
             </p>
             <div className="rounded-2xl border border-white/8 bg-black/24 p-4 mono text-sm text-accent">
-              Distance (m) ~= Size (cm) x 34.38 / MOA
+              Distance (m) ~= Size (cm) x {MOA_DISTANCE_FACTOR} / MOA
             </div>
             <p>
-              The approximation is usually good enough for rough ranging, while the homepage
-              calculator uses the exact version.
+              That makes the field formula match the homepage calculator exactly for your current
+              MOA reticle scale.
             </p>
           </div>
         </Card>
 
-        <Card title="Reference Examples">
-          <div className="space-y-2">
-            {moaExamples.map((example) => (
-              <div
-                key={example.label}
-                className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3"
-              >
-                <p className="text-sm text-white/76">{example.label}</p>
-                <p className="mono text-sm text-accent">{example.result}</p>
-              </div>
-            ))}
+        <Card title="Quick Reference">
+          <div className="space-y-3">
+            <div className="flex gap-2 overflow-x-auto rounded-2xl bg-black/18 p-2">
+              {moaQuickReferenceTabs.map((tab) => {
+                const isActive = tab.id === selectedQuickReferenceTab.id;
+
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveQuickReferenceTab(tab.id)}
+                    className={`shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      isActive ? "bg-accent text-[#182015]" : "text-white/72"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="space-y-2">
+              {selectedQuickReferenceTab.rows.map((row) => (
+                <div
+                  key={row.label}
+                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/18 px-4 py-3"
+                >
+                  <p className="text-sm text-white/76">{row.label}</p>
+                  <p className="mono text-sm text-accent">{row.result}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </Card>
       </div>

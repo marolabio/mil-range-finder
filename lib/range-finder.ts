@@ -5,7 +5,8 @@ export const LAST_PRESET_STORAGE_KEY = "mil-last-preset";
 export const STEP_CALIBRATION_STORAGE_KEY = "mil-step-calibration";
 export const DEFAULT_PRESET_LABEL = "4 cm target";
 export const DEFAULT_SIZE_INPUT = "4";
-export const DEFAULT_ANGULAR_UNIT = "mil";
+export const DEFAULT_ANGULAR_UNIT = "moa";
+export const MOA_DISTANCE_FACTOR = 8;
 export const DEFAULT_STEP_COUNT_INPUT = "";
 export const DEFAULT_CALIBRATION_STEPS_INPUT = "8";
 export const DEFAULT_CALIBRATION_METERS_INPUT = "5";
@@ -205,6 +206,93 @@ export const quickReferenceTabs: QuickReferenceTab[] = [
   },
 ];
 
+export const moaQuickReferenceTabs: QuickReferenceTab[] = [
+  {
+    id: "size-4",
+    label: "4 cm",
+    rows: [
+      { label: "4 cm at 3.2 MOA", result: "10 m" },
+      { label: "4 cm at 2.13 MOA", result: "15 m" },
+      { label: "4 cm at 1.6 MOA", result: "20 m" },
+      { label: "4 cm at 1.28 MOA", result: "25 m" },
+      { label: "4 cm at 1.07 MOA", result: "30 m" },
+      { label: "4 cm at 0.91 MOA", result: "35 m" },
+      { label: "4 cm at 0.8 MOA", result: "40 m" },
+      { label: "4 cm at 0.71 MOA", result: "45 m" },
+      { label: "4 cm at 0.64 MOA", result: "50 m" },
+    ],
+  },
+  {
+    id: "size-6",
+    label: "6 cm",
+    rows: [
+      { label: "6 cm at 4.8 MOA", result: "10 m" },
+      { label: "6 cm at 3.2 MOA", result: "15 m" },
+      { label: "6 cm at 2.4 MOA", result: "20 m" },
+      { label: "6 cm at 1.92 MOA", result: "25 m" },
+      { label: "6 cm at 1.6 MOA", result: "30 m" },
+      { label: "6 cm at 1.37 MOA", result: "35 m" },
+      { label: "6 cm at 1.2 MOA", result: "40 m" },
+      { label: "6 cm at 1.07 MOA", result: "45 m" },
+      { label: "6 cm at 0.96 MOA", result: "50 m" },
+    ],
+  },
+  {
+    id: "size-8",
+    label: "8 cm",
+    rows: [
+      { label: "8 cm at 6.4 MOA", result: "10 m" },
+      { label: "8 cm at 4.27 MOA", result: "15 m" },
+      { label: "8 cm at 3.2 MOA", result: "20 m" },
+      { label: "8 cm at 2.56 MOA", result: "25 m" },
+      { label: "8 cm at 2.13 MOA", result: "30 m" },
+      { label: "8 cm at 1.83 MOA", result: "35 m" },
+      { label: "8 cm at 1.6 MOA", result: "40 m" },
+      { label: "8 cm at 1.42 MOA", result: "45 m" },
+      { label: "8 cm at 1.28 MOA", result: "50 m" },
+    ],
+  },
+  {
+    id: "size-10",
+    label: "10 cm",
+    rows: [
+      { label: "10 cm at 8 MOA", result: "10 m" },
+      { label: "10 cm at 5.33 MOA", result: "15 m" },
+      { label: "10 cm at 4 MOA", result: "20 m" },
+      { label: "10 cm at 3.2 MOA", result: "25 m" },
+      { label: "10 cm at 2.67 MOA", result: "30 m" },
+      { label: "10 cm at 2.29 MOA", result: "35 m" },
+      { label: "10 cm at 2 MOA", result: "40 m" },
+      { label: "10 cm at 1.78 MOA", result: "45 m" },
+      { label: "10 cm at 1.6 MOA", result: "50 m" },
+    ],
+  },
+  {
+    id: "size-20",
+    label: "20 cm",
+    rows: [
+      { label: "20 cm at 8 MOA", result: "20 m" },
+      { label: "20 cm at 6.4 MOA", result: "25 m" },
+      { label: "20 cm at 5.33 MOA", result: "30 m" },
+      { label: "20 cm at 4.57 MOA", result: "35 m" },
+      { label: "20 cm at 4 MOA", result: "40 m" },
+      { label: "20 cm at 3.56 MOA", result: "45 m" },
+      { label: "20 cm at 3.2 MOA", result: "50 m" },
+    ],
+  },
+  {
+    id: "size-30",
+    label: "30 cm",
+    rows: [
+      { label: "30 cm at 8 MOA", result: "30 m" },
+      { label: "30 cm at 6.86 MOA", result: "35 m" },
+      { label: "30 cm at 6 MOA", result: "40 m" },
+      { label: "30 cm at 5.33 MOA", result: "45 m" },
+      { label: "30 cm at 4.8 MOA", result: "50 m" },
+    ],
+  },
+];
+
 export const bandProfiles: BandProfile[] = [
   {
     id: "flat-18-12-040",
@@ -290,7 +378,10 @@ export function getHomePageInputs(
     presetSize?.toString() ??
     DEFAULT_SIZE_INPUT;
   const angularUnitValue = Array.isArray(unitValue) ? unitValue[0] : unitValue;
-  const angularUnit = angularUnitValue === "moa" ? "moa" : DEFAULT_ANGULAR_UNIT;
+  const angularUnit =
+    angularUnitValue === "mil" || angularUnitValue === "moa"
+      ? angularUnitValue
+      : DEFAULT_ANGULAR_UNIT;
 
   return {
     angularUnit,
@@ -316,7 +407,7 @@ export function calculateDistanceMeters(
 
   const distance =
     angularUnit === "moa"
-      ? sizeCm / (100 * Math.tan((angularReading * Math.PI) / 10800))
+      ? (sizeCm * MOA_DISTANCE_FACTOR) / angularReading
       : (sizeCm * 10) / angularReading;
 
   return Number.isFinite(distance) ? distance : null;

@@ -286,7 +286,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
               <span className="ui-chip">meters</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {(["mil", "moa"] as const).map((unit) => {
+              {(["moa", "mil"] as const).map((unit) => {
                 const isSelected = angularUnit === unit;
 
                 return (
