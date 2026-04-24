@@ -5,7 +5,9 @@ import Link from "next/link";
 import { Card } from "@/components/card";
 import {
   calculateDistanceMeters,
+  convertDistanceToMeters,
   DEFAULT_ANGULAR_UNIT,
+  getDefaultStepRangeInputs,
   type AngularUnit,
   type HomePageInputs,
   formatMeters,
@@ -20,7 +22,9 @@ import {
   presetGroups,
   readStoredJson,
   readStoredMoaDistanceFactorInput,
+  STEP_CALIBRATION_STORAGE_KEY,
   type HistoryItem,
+  type StepRangeInputs,
 } from "@/lib/range-finder";
 
 type FieldErrors = {
@@ -31,6 +35,11 @@ type FieldErrors = {
 type HomePageProps = {
   initialInputs: HomePageInputs;
 };
+
+type StepCalibrationInputs = Pick<
+  StepRangeInputs,
+  "calibrationDistanceUnit" | "calibrationMetersInput" | "calibrationStepsInput"
+>;
 
 const presetByLabel = new Map(
   presetGroups.flatMap((group) =>
@@ -51,6 +60,140 @@ function readStoredHistoryRaw() {
   }
 
   return window.localStorage.getItem(HISTORY_STORAGE_KEY) ?? "[]";
+}
+
+function readStoredStepCalibration(): StepCalibrationInputs {
+  const defaults = getDefaultStepRangeInputs();
+  return readStoredJson<StepCalibrationInputs | null>(STEP_CALIBRATION_STORAGE_KEY, null) ?? {
+    calibrationStepsInput: defaults.calibrationStepsInput,
+    calibrationMetersInput: defaults.calibrationMetersInput,
+    calibrationDistanceUnit: defaults.calibrationDistanceUnit,
+  };
+}
+
+function formatStepCount(value: number) {
+  return `${new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0,
+  }).format(Math.round(value))} steps`;
+}
+
+function formatReticleValue(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+  }).format(value);
+}
+
+function ReticleReadingPreview({
+  reading,
+  unit,
+}: {
+  reading: number | null;
+  unit: AngularUnit;
+}) {
+  const validReading = reading !== null && Number.isFinite(reading) && reading > 0 ? reading : null;
+  const baseMax = unit === "moa" ? 50 : 10;
+  const majorStepValue = unit === "moa" ? 10 : 1;
+  const scaleMax =
+    validReading !== null && validReading > baseMax
+      ? Math.ceil(validReading / majorStepValue) * majorStepValue
+      : baseMax;
+  const width = 640;
+  const height = 150;
+  const padding = 28;
+  const scaleWidth = width - padding * 2;
+  const markerX =
+    validReading !== null ? padding + (validReading / scaleMax) * scaleWidth : padding;
+  const majorCount = Math.max(1, Math.round(scaleMax / majorStepValue));
+  const unitLabel = unit.toUpperCase();
+
+  return (
+    <div className="rounded-[1.25rem] border border-white/8 bg-black/24 p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-xs uppercase tracking-[0.18em] text-white/55">Reticle preview</p>
+        <p className="mono text-xs text-accent">
+          {validReading !== null ? `${formatReticleValue(validReading)} ${unitLabel}` : `-- ${unitLabel}`}
+        </p>
+      </div>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full"
+        role="img"
+        aria-label={`${unitLabel} reticle reading preview`}
+      >
+        <line
+          x1={padding}
+          y1={62}
+          x2={width - padding}
+          y2={62}
+          stroke="rgba(240,245,234,0.88)"
+          strokeWidth="2"
+          vectorEffect="non-scaling-stroke"
+        />
+        {Array.from({ length: majorCount + 1 }, (_, index) => {
+          const x = padding + (index / majorCount) * scaleWidth;
+          const label = index * majorStepValue;
+
+          return (
+            <g key={`major-${label}`}>
+              <line
+                x1={x}
+                y1={30}
+                x2={x}
+                y2={98}
+                stroke="rgba(159,194,103,0.95)"
+                strokeWidth="2.6"
+                vectorEffect="non-scaling-stroke"
+              />
+              <text
+                x={x}
+                y={128}
+                fill="rgba(236,241,230,0.82)"
+                fontSize="16"
+                fontFamily="IBM Plex Mono, monospace"
+                textAnchor="middle"
+              >
+                {label}
+              </text>
+            </g>
+          );
+        })}
+        {Array.from({ length: majorCount }, (_, index) => {
+          const x = padding + ((index + 0.5) / majorCount) * scaleWidth;
+
+          return (
+            <line
+              key={`half-${index}`}
+              x1={x}
+              y1={42}
+              x2={x}
+              y2={86}
+              stroke="rgba(240,245,234,0.55)"
+              strokeWidth="1.5"
+              vectorEffect="non-scaling-stroke"
+            />
+          );
+        })}
+        {validReading !== null ? (
+          <g>
+            <line
+              x1={markerX}
+              y1={16}
+              x2={markerX}
+              y2={110}
+              stroke="rgba(251,191,36,1)"
+              strokeWidth="3"
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              d={`M ${markerX - 8} 16 L ${markerX + 8} 16 L ${markerX} 28 Z`}
+              fill="rgba(251,191,36,1)"
+            />
+          </g>
+        ) : null}
+      </svg>
+    </div>
+  );
 }
 
 function normalizeHistoryItem(item: HistoryItem): HistoryItem {
@@ -103,6 +246,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
   const [moaDistanceFactorInput, setMoaDistanceFactorInput] = useState(() =>
     readStoredMoaDistanceFactorInput(),
   );
+  const [stepCalibration] = useState(readStoredStepCalibration);
   const storedHistory = useMemo(() => {
     try {
       const parsed = JSON.parse(storedHistoryRaw) as HistoryItem[];
@@ -125,6 +269,16 @@ export function HomePage({ initialInputs }: HomePageProps) {
   const distance =
     milNumber && sizeNumber
       ? calculateDistanceMeters(sizeNumber, milNumber, angularUnit, moaDistanceFactor)
+      : null;
+  const calibrationSteps = parsePositiveNumber(stepCalibration.calibrationStepsInput);
+  const calibrationDistanceValue = parsePositiveNumber(stepCalibration.calibrationMetersInput);
+  const calibrationMeters =
+    calibrationDistanceValue !== null
+      ? convertDistanceToMeters(calibrationDistanceValue, stepCalibration.calibrationDistanceUnit)
+      : null;
+  const estimatedSteps =
+    distance !== null && calibrationMeters !== null && calibrationSteps !== null
+      ? (distance / calibrationMeters) * calibrationSteps
       : null;
   const hasValidResult = distance !== null && Object.keys(errors).length === 0;
   const angularUnitLabel = angularUnit.toUpperCase();
@@ -316,14 +470,8 @@ export function HomePage({ initialInputs }: HomePageProps) {
     <main className="flex-1 pt-0 pb-3 sm:pb-10">
       <div className="app-shell space-y-3 sm:space-y-4">
         <div className="space-y-3">
-          <div className="ui-panel space-y-2 p-3 sm:p-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="ui-field-label text-xs font-semibold uppercase tracking-[0.18em]">
-                Angular Unit
-              </span>
-              <span className="ui-chip">meters</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="ui-panel p-2" aria-label="Angular unit">
+            <div className="grid grid-cols-2 gap-1.5">
               {(["moa", "mil"] as const).map((unit) => {
                 const isSelected = angularUnit === unit;
 
@@ -332,9 +480,10 @@ export function HomePage({ initialInputs }: HomePageProps) {
                     key={unit}
                     type="button"
                     onClick={() => onAngularUnitChange(unit)}
-                    className={`ui-button min-h-11 rounded-lg px-3 text-sm ${
+                    className={`min-h-10 rounded-lg px-3 text-sm font-semibold transition ${
                       isSelected ? "bg-accent text-[#182015]" : "ui-button-secondary"
                     }`}
+                    aria-pressed={isSelected}
                   >
                     {unit.toUpperCase()}
                   </button>
@@ -379,9 +528,27 @@ export function HomePage({ initialInputs }: HomePageProps) {
                       <button
                         type="button"
                         onClick={() => setIsPresetModalOpen(true)}
-                        className="ui-button ui-button-secondary min-h-9 rounded-lg px-2.5 py-1.5 text-center text-xs md:min-h-0 md:w-auto"
+                        className="ui-button ui-button-secondary inline-flex min-h-9 w-10 items-center justify-center rounded-lg px-0 py-1.5 md:min-h-0"
+                        aria-label="Choose target size preset"
+                        title="Choose preset"
                       >
-                        Choose
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          className="h-4.5 w-4.5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M4 5h16" />
+                          <path d="M4 12h16" />
+                          <path d="M4 19h16" />
+                          <circle cx="8" cy="5" r="1.8" fill="currentColor" stroke="none" />
+                          <circle cx="14" cy="12" r="1.8" fill="currentColor" stroke="none" />
+                          <circle cx="10" cy="19" r="1.8" fill="currentColor" stroke="none" />
+                        </svg>
                       </button>
 
                     </div>
@@ -421,35 +588,58 @@ export function HomePage({ initialInputs }: HomePageProps) {
                       <button
                         type="button"
                         onClick={() => setIsMoaSettingsModalOpen(true)}
-                        className="ui-button ui-button-secondary min-h-9 rounded-lg px-2.5 py-1.5 text-center text-xs md:min-h-0 md:w-auto"
+                        className="ui-button ui-button-secondary inline-flex min-h-9 w-10 items-center justify-center rounded-lg px-0 py-1.5 md:min-h-0"
+                        aria-label="Open MOA settings"
+                        title="Settings"
                       >
-                        Settings
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          className="h-4.5 w-4.5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <circle cx="12" cy="12" r="3" />
+                          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82-.33h.01a1.65 1.65 0 0 0 .99-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 .99 1.51h.01a1.65 1.65 0 0 0 1.82.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51.99H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51.99Z" />
+                        </svg>
                       </button>
                     ) : null}
                   </div>
                   {errors.angularReading ? (
                     <p className="mt-2 text-sm text-rose-300">{errors.angularReading}</p>
                   ) : null}
+                  <div className="mt-3">
+                    <ReticleReadingPreview reading={milNumber} unit={angularUnit} />
+                  </div>
                 </label>
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  {hasValidResult && distance !== null ? (
-                    <div className="ui-panel p-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-white/55">Estimated distance</p>
-                      <p className="mt-2 text-4xl font-bold tracking-tight text-accent md:text-5xl lg:text-4xl xl:text-5xl">
-                        {formatMeters(distance, 1)}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="ui-panel p-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-white/55">Estimated distance</p>
-                      <p className="mt-2 text-4xl font-bold tracking-tight text-white/35 md:text-5xl lg:text-4xl xl:text-5xl">
-                        0 m
-                      </p>
-                    </div>
-                  )}
+                  <div className="ui-panel p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/55">
+                      Estimated distance
+                    </p>
+                    <p
+                      className={`mt-2 text-4xl font-bold tracking-tight md:text-5xl lg:text-4xl xl:text-5xl ${
+                        hasValidResult && distance !== null ? "text-accent" : "text-white/35"
+                      }`}
+                    >
+                      {hasValidResult && distance !== null ? formatMeters(distance, 1) : "0 m"}
+                    </p>
+                    <p
+                      className={`mt-2 text-sm ${
+                        hasValidResult && estimatedSteps !== null ? "text-white/72" : "text-white/35"
+                      }`}
+                    >
+                      {hasValidResult && estimatedSteps !== null
+                        ? `${formatStepCount(estimatedSteps)} to target`
+                        : "-- steps to target"}
+                    </p>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 md:flex md:justify-end lg:justify-stretch">
                   <button
