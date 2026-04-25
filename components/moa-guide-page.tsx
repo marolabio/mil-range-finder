@@ -16,6 +16,7 @@ export function MoaGuidePage() {
   const scaleWidth = width - padding * 2;
   const segmentWidth = scaleWidth / 5;
   const oneMoaX = padding + segmentWidth / 10;
+  const oneMoaTickColor = "rgba(214,211,203,0.62)";
   const [moaDistanceFactor, setMoaDistanceFactor] = useState(() => readStoredMoaDistanceFactor());
   const moaQuickReferenceTabs = useMemo(
     () => getMoaQuickReferenceTabs(moaDistanceFactor),
@@ -53,7 +54,7 @@ export function MoaGuidePage() {
           <span>Back</span>
         </Link>
 
-        <Card title="Reticle Demo" subtitle="Half mark, then bold 10 MOA steps">
+        <Card title="Reticle Demo" subtitle="1 MOA guide marks, half marks, then bold 10 MOA steps">
           <div className="space-y-4">
             <div className="rounded-[1.5rem] border border-white/10 bg-black/24 p-3">
               <svg
@@ -101,13 +102,32 @@ export function MoaGuidePage() {
                 <text
                   x={(padding + oneMoaX) / 2}
                   y={14}
-                  fill="rgba(236,241,230,0.92)"
+                  fill={oneMoaTickColor}
                   fontSize="14"
                   fontFamily="IBM Plex Mono, monospace"
                   textAnchor="middle"
                 >
                   1 MOA
                 </text>
+                {Array.from({ length: 5 }, (_, segmentIndex) =>
+                  Array.from({ length: 9 }, (_, tickIndex) => {
+                    const x =
+                      padding + segmentWidth * segmentIndex + (segmentWidth / 10) * (tickIndex + 1);
+
+                    return (
+                      <line
+                        key={`one-moa-${segmentIndex}-${tickIndex}`}
+                        x1={x}
+                        y1={62}
+                        x2={x}
+                        y2={78}
+                        stroke={oneMoaTickColor}
+                        strokeWidth="1"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    );
+                  }),
+                )}
                 {Array.from({ length: 5 }, (_, index) => {
                   const startX = padding + segmentWidth * index;
                   const midX = startX + segmentWidth / 2;
@@ -151,10 +171,13 @@ export function MoaGuidePage() {
             </div>
 
             <div className="rounded-2xl surface-soft p-4 text-sm leading-6 text-white/78">
-              <p className="font-medium text-accent">Pattern: small line, then big line at every 10 MOA</p>
+              <p className="font-medium text-accent">
+                Pattern: neutral 1 MOA guides, half mark, then big line at every 10 MOA
+              </p>
               <p className="mt-1">
-                The marker at the top shows what `1 MOA` looks like. Each bold tick below is the next
-                `10 MOA` reference on your reticle, with the lighter tick at the halfway point.
+                The marker at the top shows what `1 MOA` looks like. The small guide ticks repeat that
+                spacing across the scale, with the lighter tick at the halfway point and each bold tick
+                marking the next `10 MOA` reference.
               </p>
             </div>
           </div>

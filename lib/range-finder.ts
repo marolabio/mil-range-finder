@@ -575,6 +575,6 @@ export function readStoredMoaDistanceFactorInput() {
 function formatAngularReading(value: number) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 1,
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 1,
   }).format(value);
 }

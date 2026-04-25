@@ -1,18 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/card";
 import {
   calculateDistanceMeters,
   convertDistanceToMeters,
-  DEFAULT_ANGULAR_UNIT,
   getDefaultStepRangeInputs,
   type AngularUnit,
   type HomePageInputs,
   formatMeters,
-  HISTORY_LIMIT,
-  HISTORY_STORAGE_KEY,
   LAST_ANGULAR_READING_STORAGE_KEY,
   LAST_PRESET_STORAGE_KEY,
   LAST_TARGET_SIZE_STORAGE_KEY,
@@ -23,7 +20,6 @@ import {
   readStoredJson,
   readStoredMoaDistanceFactorInput,
   STEP_CALIBRATION_STORAGE_KEY,
-  type HistoryItem,
   type StepRangeInputs,
 } from "@/lib/range-finder";
 
@@ -41,26 +37,15 @@ type StepCalibrationInputs = Pick<
   "calibrationDistanceUnit" | "calibrationMetersInput" | "calibrationStepsInput"
 >;
 
-const presetByLabel = new Map(
+const presetLabelBySize = new Map(
   presetGroups.flatMap((group) =>
-    group.presets.map((preset) => [preset.label, preset.sizeCm] as const),
+    group.presets.map((preset) => [preset.sizeCm, preset.label] as const),
   ),
 );
 
-function subscribeToStorage(callback: () => void) {
-  window.addEventListener("storage", callback);
-  return () => {
-    window.removeEventListener("storage", callback);
-  };
-}
-
-function readStoredHistoryRaw() {
-  if (typeof window === "undefined") {
-    return "[]";
-  }
-
-  return window.localStorage.getItem(HISTORY_STORAGE_KEY) ?? "[]";
-}
+const quickReferenceSizes = Array.from({ length: 15 }, (_, index) => (index + 1) * 2);
+const quickReferenceAngularReadings = Array.from({ length: 20 }, (_, index) => (index + 1) * 0.5);
+const defaultQuickReferenceSize = quickReferenceSizes[0] ?? 4;
 
 function readStoredStepCalibration(): StepCalibrationInputs {
   const defaults = getDefaultStepRangeInputs();
@@ -79,8 +64,8 @@ function formatStepCount(value: number) {
 
 function formatReticleValue(value: number) {
   return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
   }).format(value);
 }
 
@@ -106,6 +91,7 @@ function ReticleReadingPreview({
     validReading !== null ? padding + (validReading / scaleMax) * scaleWidth : padding;
   const majorCount = Math.max(1, Math.round(scaleMax / majorStepValue));
   const unitLabel = unit.toUpperCase();
+  const oneMoaTickColor = "rgba(214,211,203,0.62)";
 
   return (
     <div className="rounded-[1.25rem] border border-white/8 bg-black/24 p-3">
@@ -158,6 +144,26 @@ function ReticleReadingPreview({
             </g>
           );
         })}
+        {unit === "moa"
+          ? Array.from({ length: majorCount }, (_, segmentIndex) =>
+              Array.from({ length: 9 }, (_, tickIndex) => {
+                const x = padding + ((segmentIndex * 10 + tickIndex + 1) / scaleMax) * scaleWidth;
+
+                return (
+                  <line
+                    key={`one-moa-${segmentIndex}-${tickIndex}`}
+                    x1={x}
+                    y1={56}
+                    x2={x}
+                    y2={68}
+                    stroke={oneMoaTickColor}
+                    strokeWidth="0.9"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                );
+              }),
+            )
+          : null}
         {Array.from({ length: majorCount }, (_, index) => {
           const x = padding + ((index + 0.5) / majorCount) * scaleWidth;
 
@@ -196,13 +202,6 @@ function ReticleReadingPreview({
   );
 }
 
-function normalizeHistoryItem(item: HistoryItem): HistoryItem {
-  return {
-    ...item,
-    angularUnit: item.angularUnit ?? DEFAULT_ANGULAR_UNIT,
-  };
-}
-
 function createErrors(angularReadingValue: string, sizeValue: string, angularUnit: AngularUnit): FieldErrors {
   const angularReadingNumber = Number(angularReadingValue);
   const sizeNumber = Number(sizeValue);
@@ -234,30 +233,13 @@ export function HomePage({ initialInputs }: HomePageProps) {
   const [selectedPreset, setSelectedPreset] = useState(() =>
     readStoredJson<string | null>(LAST_PRESET_STORAGE_KEY, null) ?? initialInputs.selectedPreset,
   );
-  const storedHistoryRaw = useSyncExternalStore(subscribeToStorage, readStoredHistoryRaw, () => "[]");
-  const [historyOverride, setHistoryOverride] = useState<HistoryItem[] | null>(null);
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isMoaSettingsModalOpen, setIsMoaSettingsModalOpen] = useState(false);
-  const [pendingDeleteItem, setPendingDeleteItem] = useState<HistoryItem | null>(null);
-  const [saveNameInput, setSaveNameInput] = useState("");
-  const [saveNameError, setSaveNameError] = useState("");
-  const [lastSavedKey, setLastSavedKey] = useState("");
+  const [activeQuickReferenceSize, setActiveQuickReferenceSize] = useState(defaultQuickReferenceSize);
   const [moaDistanceFactorInput, setMoaDistanceFactorInput] = useState(() =>
     readStoredMoaDistanceFactorInput(),
   );
   const [stepCalibration] = useState(readStoredStepCalibration);
-  const storedHistory = useMemo(() => {
-    try {
-      const parsed = JSON.parse(storedHistoryRaw) as HistoryItem[];
-      return Array.isArray(parsed)
-        ? parsed.map(normalizeHistoryItem).slice(0, HISTORY_LIMIT)
-        : [];
-    } catch {
-      return [];
-    }
-  }, [storedHistoryRaw]);
-  const history = historyOverride ?? storedHistory;
 
   const errors = useMemo(
     () => createErrors(milInput, sizeInput, angularUnit),
@@ -285,18 +267,43 @@ export function HomePage({ initialInputs }: HomePageProps) {
   const rangeTitle = `${angularUnitLabel} Range`;
   const guideHref = angularUnit === "moa" ? "/moa-guide" : "/guide";
   const guideLabel = `Open ${angularUnitLabel} guide`;
+  const quickReferenceTabs = quickReferenceSizes.map((sizeCm) => ({
+    id: `size-${sizeCm}`,
+    label: `${sizeCm} cm`,
+    sizeCm,
+  }));
+  const selectedQuickReferenceTab =
+    quickReferenceTabs.find((tab) => tab.sizeCm === activeQuickReferenceSize) ??
+    quickReferenceTabs[0];
+  const selectedQuickReferenceSize = selectedQuickReferenceTab?.sizeCm ?? defaultQuickReferenceSize;
+  const selectedQuickReferenceItems = quickReferenceAngularReadings
+    .map((angularReading) => {
+      const distanceMeters = calculateDistanceMeters(
+        selectedQuickReferenceSize,
+        angularReading,
+        angularUnit,
+        moaDistanceFactor,
+      );
+      return {
+        angularReading,
+        distanceMeters,
+        sizeCm: selectedQuickReferenceSize,
+      };
+    })
+    .filter(
+      (item): item is { angularReading: number; distanceMeters: number; sizeCm: number } =>
+        item.distanceMeters !== null && item.distanceMeters >= 10 && item.distanceMeters <= 50,
+    );
+
   useEffect(() => {
-    if (!isPresetModalOpen && !isSaveModalOpen && !isMoaSettingsModalOpen && !pendingDeleteItem) {
+    if (!isPresetModalOpen && !isMoaSettingsModalOpen) {
       return;
     }
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setIsPresetModalOpen(false);
-        setIsSaveModalOpen(false);
         setIsMoaSettingsModalOpen(false);
-        setPendingDeleteItem(null);
-        setSaveNameError("");
       }
     }
 
@@ -308,19 +315,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
       window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [isPresetModalOpen, isSaveModalOpen, isMoaSettingsModalOpen, pendingDeleteItem]);
-
-  useEffect(() => {
-    const storedHistory = readStoredJson<HistoryItem[]>(HISTORY_STORAGE_KEY, []).map(
-      normalizeHistoryItem,
-    );
-    if (storedHistory.length > HISTORY_LIMIT) {
-      window.localStorage.setItem(
-        HISTORY_STORAGE_KEY,
-        JSON.stringify(storedHistory.slice(0, HISTORY_LIMIT)),
-      );
-    }
-  }, []);
+  }, [isPresetModalOpen, isMoaSettingsModalOpen]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -341,68 +336,8 @@ export function HomePage({ initialInputs }: HomePageProps) {
     window.localStorage.setItem(LAST_PRESET_STORAGE_KEY, JSON.stringify(selectedPreset));
   }, [selectedPreset]);
 
-  function openSaveModal() {
-    if (!hasValidResult || milNumber === null || sizeNumber === null || distance === null) {
-      return;
-    }
-
-    setSaveNameInput(selectedPreset || "Custom");
-    setSaveNameError("");
-    setIsSaveModalOpen(true);
-  }
-
-  function saveCurrentResult() {
-    if (!hasValidResult || milNumber === null || sizeNumber === null || distance === null) {
-      return;
-    }
-
-    const trimmedSaveName = saveNameInput.trim();
-    if (trimmedSaveName === "") {
-      setSaveNameError("Enter a name for this saved calculation.");
-      return;
-    }
-
-    const saveKey = `${angularUnit}|${selectedPreset}|${trimmedSaveName}|${sizeNumber}|${milNumber}|${distance.toFixed(4)}`;
-    if (saveKey === lastSavedKey) {
-      setIsSaveModalOpen(false);
-      return;
-    }
-
-    const isDuplicate = history.some(
-      (entry) =>
-        (entry.savedName ?? entry.label) === trimmedSaveName &&
-        entry.angularUnit === angularUnit &&
-        entry.label === (selectedPreset || "Custom") &&
-        entry.targetSizeCm === sizeNumber &&
-        entry.milReading === milNumber,
-    );
-    if (isDuplicate) {
-      setSaveNameError("A saved calculation with that name and values already exists.");
-      return;
-    }
-
-    const item: HistoryItem = {
-      angularUnit,
-      label: selectedPreset || "Custom",
-      savedName: trimmedSaveName,
-      targetSizeCm: sizeNumber,
-      milReading: milNumber,
-      resultMeters: distance,
-      createdAt: new Date().toISOString(),
-    };
-
-    const nextHistory = [item, ...history].slice(0, HISTORY_LIMIT);
-
-    setHistoryOverride(nextHistory);
-    setLastSavedKey(saveKey);
-    setIsSaveModalOpen(false);
-    setSaveNameError("");
-    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
-  }
-
   function onAngularUnitChange(nextUnit: AngularUnit) {
     setAngularUnit(nextUnit);
-    setLastSavedKey("");
   }
 
   function selectPreset(label: string, sizeCm: number) {
@@ -422,48 +357,16 @@ export function HomePage({ initialInputs }: HomePageProps) {
     setMilInput("");
     setSizeInput("");
     setSelectedPreset("Custom");
-    setLastSavedKey("");
-    setSaveNameError("");
   }
 
   function resetMoaCalibration() {
     setMoaDistanceFactorInput(MOA_DISTANCE_FACTOR.toString());
   }
 
-  function loadHistoryItem(item: HistoryItem) {
-    const presetSizeFromLabel = presetByLabel.get(item.label);
-    const normalizedItem = normalizeHistoryItem(item);
-    const saveKey = `${normalizedItem.angularUnit}|${normalizedItem.label}|${normalizedItem.targetSizeCm}|${normalizedItem.milReading}|${normalizedItem.resultMeters.toFixed(4)}`;
-
-    setAngularUnit(normalizedItem.angularUnit);
-    setMilInput(normalizedItem.milReading.toString());
-    setSizeInput((presetSizeFromLabel ?? normalizedItem.targetSizeCm).toString());
-    setSelectedPreset(normalizedItem.label);
-    setLastSavedKey(saveKey);
-  }
-
-  function deleteHistoryItem(itemToDelete: HistoryItem) {
-    const nextHistory = history.filter(
-      (item) =>
-        !(
-          item.createdAt === itemToDelete.createdAt &&
-          item.label === itemToDelete.label &&
-          item.targetSizeCm === itemToDelete.targetSizeCm &&
-          item.milReading === itemToDelete.milReading
-        ),
-    );
-
-    setHistoryOverride(nextHistory);
-    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
-  }
-
-  function confirmDeleteHistoryItem() {
-    if (!pendingDeleteItem) {
-      return;
-    }
-
-    deleteHistoryItem(pendingDeleteItem);
-    setPendingDeleteItem(null);
+  function applyQuickReference(sizeCm: number, angularReading: number) {
+    setSizeInput(sizeCm.toString());
+    setMilInput(formatReticleValue(angularReading));
+    setSelectedPreset(presetLabelBySize.get(sizeCm) ?? "Custom");
   }
 
   return (
@@ -641,22 +544,11 @@ export function HomePage({ initialInputs }: HomePageProps) {
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 md:flex md:justify-end lg:justify-stretch">
-                  <button
-                    type="button"
-                    onClick={openSaveModal}
-                    disabled={!hasValidResult}
-                    className={`ui-button min-h-11 rounded-lg px-3 text-sm md:min-h-0 lg:flex-1 ${hasValidResult
-                      ? "bg-accent text-[#182015]"
-                      : "cursor-not-allowed bg-white/[0.04] text-white/35"
-                      }`}
-                  >
-                    Save
-                  </button>
+                <div className="flex md:justify-end lg:justify-stretch">
                   <button
                     type="button"
                     onClick={clearAll}
-                    className="ui-button ui-button-secondary min-h-11 rounded-lg px-3 text-sm md:min-h-0 lg:flex-1"
+                    className="ui-button ui-button-secondary min-h-11 w-full rounded-lg px-3 text-sm md:min-h-0 lg:flex-1"
                   >
                     Clear
                   </button>
@@ -665,66 +557,52 @@ export function HomePage({ initialInputs }: HomePageProps) {
             </div>
           </Card>
 
-          <Card title="Saved Calculations" className="lg:sticky lg:top-6">
-            <div className="space-y-2">
-              {history.length > 0 ? (
-                history.map((item) => (
-                  <div
-                    key={`${item.createdAt}-${item.label}`}
-                    className="ui-panel p-2"
-                  >
-                    <div className="rounded-lg px-2 py-2">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="min-w-0 flex-1 truncate text-base font-semibold text-white">
-                          {item.savedName || item.label || "Custom"}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setPendingDeleteItem(item)}
-                          className="shrink-0 rounded-lg border border-white/8 bg-white/[0.035] p-2 text-white/72 transition active:bg-white/[0.06]"
-                          aria-label={`Delete ${item.label || "Custom"} saved calculation`}
-                        >
-                          <svg
-                            aria-hidden="true"
-                            viewBox="0 0 24 24"
-                            className="h-4 w-4"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M4 7h16" />
-                            <path d="M9 7V5h6v2" />
-                            <path d="M7 7l1 12h8l1-12" />
-                            <path d="M10 11v5" />
-                            <path d="M14 11v5" />
-                          </svg>
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => loadHistoryItem(item)}
-                        className="mt-1 flex min-w-0 w-full items-end justify-between gap-3 text-left transition active:bg-white/8"
-                      >
-                        <div className="min-w-0 flex-1 text-sm text-white/60">
-                          <p>Target Size: {item.targetSizeCm} cm</p>
-                          <p className="mt-1">
-                            {normalizeHistoryItem(item).angularUnit.toUpperCase()}: {item.milReading}
-                          </p>
-                        </div>
-                        <p className="mono shrink-0 text-sm text-accent">
-                          {formatMeters(item.resultMeters, 1)}
-                        </p>
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-white/58">
-                  No saved calculation yet.
-                </div>
-              )}
+          <Card
+            title="Quick Reference"
+            subtitle={`Tap a ${angularUnitLabel} reference to fill the form.`}
+            className="lg:sticky lg:top-6"
+          >
+            <div className="space-y-3">
+              <div className="flex gap-2 overflow-x-auto rounded-2xl bg-black/18 p-2">
+                {quickReferenceTabs.map((tab) => {
+                  const isActive = tab.id === selectedQuickReferenceTab?.id;
+
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveQuickReferenceSize(tab.sizeCm)}
+                      className={`shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                        isActive ? "bg-accent text-[#182015]" : "text-white/72"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-2">
+                {selectedQuickReferenceItems.map((item) => {
+                  const readingLabel = formatReticleValue(item.angularReading);
+
+                  return (
+                    <button
+                      key={`${item.sizeCm}-${item.distanceMeters}-${readingLabel}`}
+                      type="button"
+                      onClick={() => applyQuickReference(item.sizeCm, item.angularReading)}
+                      className="flex min-w-0 w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/18 px-4 py-3 text-left transition active:bg-white/8"
+                    >
+                      <p className="text-sm text-white/76">
+                        {item.sizeCm} cm at {readingLabel} {angularUnitLabel}
+                      </p>
+                      <p className="mono shrink-0 text-sm text-accent">
+                        {formatMeters(item.distanceMeters, 1)}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </Card>
 
@@ -818,112 +696,6 @@ export function HomePage({ initialInputs }: HomePageProps) {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {isSaveModalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end bg-black/70 p-2 sm:items-center sm:justify-center sm:p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Save calculation"
-          onClick={() => {
-            setIsSaveModalOpen(false);
-            setSaveNameError("");
-          }}
-        >
-          <div
-            className="field-card w-full max-w-md overflow-hidden rounded-[1.5rem]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-0 sm:px-5 sm:py-0">
-              <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-white/8 bg-[var(--surface-strong)] px-4 pb-3 pt-3 sm:-mx-5 sm:px-5 sm:pb-4 sm:pt-4">
-                <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/18 sm:hidden" />
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold tracking-wide">Save Calculation</h2>
-                    <p className="mt-1 text-sm leading-5 text-white/68">
-                      Choose a name so you can recognize this saved result later.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSaveModalOpen(false);
-                      setSaveNameError("");
-                    }}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/72 transition active:bg-white/10"
-                    aria-label="Close save dialog"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M6 6l12 12" />
-                      <path d="M18 6L6 18" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <form
-                className="space-y-4 pb-4 sm:pb-5"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  saveCurrentResult();
-                }}
-              >
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-white/58">
-                    Saved Name
-                  </span>
-                  <input
-                    autoFocus
-                    type="text"
-                    maxLength={40}
-                    value={saveNameInput}
-                    onChange={(event) => {
-                      setSaveNameInput(event.target.value);
-                      if (saveNameError) {
-                        setSaveNameError("");
-                      }
-                    }}
-                    className="min-h-10 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-base outline-none transition focus:border-emerald-300/60"
-                    placeholder="Enter a name"
-                  />
-                </label>
-
-                {saveNameError ? (
-                  <p className="text-sm text-rose-300">{saveNameError}</p>
-                ) : null}
-
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSaveModalOpen(false);
-                      setSaveNameError("");
-                    }}
-                    className="min-h-11 rounded-lg border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="min-h-11 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-[#182015]"
-                  >
-                    Save
-                  </button>
-                </div>
-              </form>
             </div>
           </div>
         </div>
@@ -1025,84 +797,6 @@ export function HomePage({ initialInputs }: HomePageProps) {
         </div>
       ) : null}
 
-      {pendingDeleteItem ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end bg-black/70 p-2 sm:items-center sm:justify-center sm:p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Delete saved calculation"
-          onClick={() => setPendingDeleteItem(null)}
-        >
-          <div
-            className="field-card w-full max-w-md overflow-hidden rounded-[1.5rem]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-0 sm:px-5 sm:py-0">
-              <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-white/8 bg-[var(--surface-strong)] px-4 pb-3 pt-3 sm:-mx-5 sm:px-5 sm:pb-4 sm:pt-4">
-                <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/18 sm:hidden" />
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold tracking-wide">Delete Saved Calculation</h2>
-                    <p className="mt-1 text-sm leading-5 text-white/68">
-                      Remove
-                      {" "}
-                      &quot;{pendingDeleteItem.savedName || pendingDeleteItem.label || "Custom"}&quot;
-                      {" "}
-                      from your saved calculations?
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setPendingDeleteItem(null)}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/72 transition active:bg-white/10"
-                    aria-label="Close delete confirmation"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M6 6l12 12" />
-                      <path d="M18 6L6 18" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-4 pb-4 sm:pb-5">
-                <div className="rounded-2xl border border-white/10 bg-black/18 p-4 text-sm text-white/70">
-                  <p>Target Size: {pendingDeleteItem.targetSizeCm} cm</p>
-                  <p className="mt-1">
-                    {normalizeHistoryItem(pendingDeleteItem).angularUnit.toUpperCase()}: {pendingDeleteItem.milReading}
-                  </p>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPendingDeleteItem(null)}
-                    className="min-h-11 rounded-lg border border-white/12 bg-white/5 px-4 py-2 text-sm font-medium text-white/80"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={confirmDeleteHistoryItem}
-                    className="min-h-11 rounded-lg bg-[var(--danger)] px-4 py-2 text-sm font-medium text-[#201513]"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </main>
   );
 }
