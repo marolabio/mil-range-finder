@@ -101,12 +101,13 @@ function ReticleReadingPreview({
           {validReading !== null ? `${formatReticleValue(validReading)} ${unitLabel}` : `-- ${unitLabel}`}
         </p>
       </div>
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="w-full"
-        role="img"
-        aria-label={`${unitLabel} reticle reading preview`}
-      >
+      <div className="overflow-x-auto pb-1">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="w-[38rem] max-w-none sm:w-full"
+          role="img"
+          aria-label={`${unitLabel} reticle reading preview`}
+        >
         <line
           x1={padding}
           y1={62}
@@ -197,7 +198,8 @@ function ReticleReadingPreview({
             />
           </g>
         ) : null}
-      </svg>
+        </svg>
+      </div>
     </div>
   );
 }
@@ -594,7 +596,7 @@ export function HomePage({ initialInputs }: HomePageProps) {
                       className="flex min-w-0 w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/18 px-4 py-3 text-left transition active:bg-white/8"
                     >
                       <p className="text-sm text-white/76">
-                        {item.sizeCm} cm at {readingLabel} {angularUnitLabel}
+                        {readingLabel} {angularUnitLabel} at {item.sizeCm} cm
                       </p>
                       <p className="mono shrink-0 text-sm text-accent">
                         {formatMeters(item.distanceMeters, 1)}
